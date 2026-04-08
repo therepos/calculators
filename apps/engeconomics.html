@@ -590,9 +590,9 @@ function calc(){
     document.getElementById("oU").textContent=fa(nui);
     document.getElementById("oU").style.color=nuiColor;
     var ns=document.getElementById("oUStatus");
-    if(nui>0&&aH>cH){ns.textContent="overrun — unbilled";ns.style.color="var(--ey-red)";}
-    else if(nui>0){ns.textContent="unbilled";ns.style.color="var(--ey-red)";}
-    else if(nui<0){ns.textContent="overbilled";ns.style.color="var(--ey-green)";}
+    if(nui>0&&aH>cH){ns.textContent="Overrun — Unbilled";ns.style.color="var(--ey-red)";}
+    else if(nui>0){ns.textContent="Unbilled";ns.style.color="var(--ey-red)";}
+    else if(nui<0){ns.textContent="Overbilled";ns.style.color="var(--ey-green)";}
     else{ns.textContent="fully billed";ns.style.color="var(--ey-dark)";}
   } else{
     document.getElementById("oU").textContent="\u2014";document.getElementById("oU").style.color="var(--ey-gray)";
