@@ -7,7 +7,7 @@ Visit the live site at:
 ## Structure
 
 ```
-financetools/
+calculators/
 ├── .scraps/                # Superseded work
 ├── apps/                   # Finance tools (HTML pages)
 │   ├── saas.html
