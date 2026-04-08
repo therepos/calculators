@@ -107,7 +107,7 @@ input[type="file"]{display:none}
 </head>
 <body>
 
-<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.3</div></div></div>
+<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.4</div></div></div>
 <div class="container">
   <div class="eng-bar"><input type="text" id="engName" placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"><span id="badge"></span><button class="btn-p" onclick="save()">Save to History</button></div>
   <div class="grid2">
@@ -203,7 +203,7 @@ input[type="file"]{display:none}
       <div class="vi"><span class="vl">TER</span><span class="vv" id="oR">—</span></div>
       <div class="vi"><span class="vl">EAF</span><span class="vv" id="oE">—</span></div>
     </div>
-    <div class="dash-row" id="etcRow" style="display:none">
+    <div class="dash-row" id="etcRow">
       <div class="vi"><span class="vl">Budget → Projected:</span><span class="vv" id="eMD">—</span></div>
       <div class="vi"><span class="vl">Hours Added:</span><span class="vv" id="eHD">—</span></div>
     </div>
@@ -455,7 +455,6 @@ function updUI(){
     tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;
     bg.innerHTML='<span class="bg bg1">Budget Set</span>';
   }
-  document.getElementById("etcRow").style.display=S.ed?"flex":"none";
 }
 
 function doBgt(){
