@@ -98,7 +98,7 @@ input[type="file"]{display:none}
 .bk-wks{padding:9px 12px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--ey-border)}
 .bk-rank:last-of-type,.bk-wks:last-of-type{border-bottom:none}
 .bk-rank:nth-last-child(2),.bk-wks:last-child{border-bottom:none}
-.bk-blk{min-width:26px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600}
+.bk-blk{min-width:30px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600}
 .bk-sep{width:1px;height:16px;background:var(--ey-border);margin:0 2px}
 .bk-leg{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ey-gray)}
 .bk-leg span{display:flex;align-items:center;gap:4px}
@@ -107,7 +107,7 @@ input[type="file"]{display:none}
 </head>
 <body>
 
-<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.2</div></div></div>
+<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.3</div></div></div>
 <div class="container">
   <div class="eng-bar"><input type="text" id="engName" placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"><span id="badge"></span><button class="btn-p" onclick="save()">Save to History</button></div>
   <div class="grid2">
@@ -118,12 +118,12 @@ input[type="file"]{display:none}
       <div id="hdr"></div>
       <div id="rows"></div>
       <button class="add-btn" id="addB" onclick="addR()">+ Add Resource</button>
+      <button class="add-btn" id="autoB" onclick="autoAlloc()" style="margin-top:4px;border-style:solid;color:var(--ey-blue);border-color:var(--ey-blue)">Auto-Allocate from Cost Allowance</button>
       <div class="tabs">
         <button id="tB" class="tab a1" onclick="doBgt()">Set Budget</button>
         <button id="tE" class="tab off">Run ETC</button>
         <button class="tab rdy" onclick="doClr()" style="flex:.5;color:var(--ey-red)">Clear</button>
       </div>
-      <div id="bookEst" style="display:none"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
         <div class="st"><span class="sl">Budget</span><span class="sv" id="hB" style="font-size:12px">—</span></div>
         <div class="st"><span class="sl">Actual</span><span class="sv" id="hA" style="font-size:12px">—</span></div>
@@ -195,15 +195,15 @@ input[type="file"]{display:none}
     </div>
   </div>
 
-  <!-- Dashboard — Reference Parameters -->
+  <!-- Dashboard -->
   <div class="dash">
     <div class="dash-params">
       <div class="vi"><span class="vl">NSR</span><span class="vv" id="oN">—</span></div>
       <div class="vi"><span class="vl">ANSR</span><span class="vv" id="oA">—</span></div>
       <div class="vi"><span class="vl">TER</span><span class="vv" id="oR">—</span></div>
-      <div class="vi"><span class="vl" id="eL">EAF</span><span class="vv" id="oE">—</span></div>
+      <div class="vi"><span class="vl">EAF</span><span class="vv" id="oE">—</span></div>
     </div>
-    <div class="dash-row etc-r" id="etcRow">
+    <div class="dash-row" id="etcRow" style="display:none">
       <div class="vi"><span class="vl">Budget → Projected:</span><span class="vv" id="eMD">—</span></div>
       <div class="vi"><span class="vl">Hours Added:</span><span class="vv" id="eHD">—</span></div>
     </div>
@@ -241,7 +241,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-var K={"Partner/Principal":{n:621,c:993},"Director":{n:454,c:381},"Senior Manager":{n:384,c:320},"Manager":{n:223,c:128},"Senior Associate 3":{n:176,c:92},"Senior Associate 2":{n:159,c:82},"Senior Associate 1":{n:138,c:79},"Associate / Staff":{n:93,c:64},"Intern (CS)":{n:45,c:9}};
+var K={"Partner/Principal":{n:621,c:993,w:2},"Director":{n:454,c:381,w:3},"Senior Manager":{n:384,c:320,w:4},"Manager":{n:223,c:128,w:12},"Senior Associate 3":{n:176,c:92,w:0},"Senior Associate 2":{n:159,c:82,w:0},"Senior Associate 1":{n:138,c:79,w:21},"Associate / Staff":{n:93,c:64,w:58},"Intern (CS)":{n:45,c:9,w:0}};
 var KN=Object.keys(K);
 var R=[{r:"Partner/Principal",b:0,e:0,a:0},{r:"Senior Manager",b:0,e:0,a:0},{r:"Manager",b:0,e:0,a:0},{r:"Senior Associate 1",b:0,e:0,a:0},{r:"Associate / Staff",b:0,e:0,a:0}];
 var S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
@@ -301,25 +301,24 @@ function renderBooking(){
     var fullW=Math.floor(s.b/HPW);
     var partH=s.b%HPW;
     for(var i=0;i<fullW;i++){
-      h+='<div class="bk-blk" style="background:'+s.col.bg+';color:'+s.col.fg+'">100</div>';
+      h+='<div class="bk-blk" style="background:'+s.col.bg+';color:'+s.col.fg+'">100%</div>';
     }
     if(partH>0){
       var pct=Math.round(partH/HPW*100);
-      // round to nearest 10 for cleanliness
       pct=Math.round(pct/10)*10;if(pct===0)pct=10;
-      h+='<div class="bk-blk" style="background:'+s.col.bgL+';color:'+s.col.fgL+'">'+pct+'</div>';
+      h+='<div class="bk-blk" style="background:'+s.col.bgL+';color:'+s.col.fgL+'">'+pct+'%</div>';
     }
-    // ETC blocks (after transfer)
+    // ETC blocks (after transfer) — red with white text
     if(S.ed&&s.e>0){
       var eFullW=Math.floor(s.e/HPW);
       var ePartH=s.e%HPW;
       for(var j=0;j<eFullW;j++){
-        h+='<div class="bk-blk" style="background:'+ETC_COLOR.bg+';color:'+ETC_COLOR.fg+'">100</div>';
+        h+='<div class="bk-blk" style="background:'+ETC_COLOR.bg+';color:#fff">100%</div>';
       }
       if(ePartH>0){
         var ePct=Math.round(ePartH/HPW*100);
         ePct=Math.round(ePct/10)*10;if(ePct===0)ePct=10;
-        h+='<div class="bk-blk" style="background:'+ETC_COLOR.bgL+';color:'+ETC_COLOR.fgL+'">'+ePct+'</div>';
+        h+='<div class="bk-blk" style="background:'+ETC_COLOR.bgL+';color:#fff">'+ePct+'%</div>';
       }
     }
     h+='</div>';
@@ -331,19 +330,40 @@ function renderBooking(){
   h+='</div>';
   el.innerHTML=h;
 }
+function autoAlloc(){
+  if(S.lk)return;
+  var fee=gv("fee"),tgtP=gv("tgt")/100;
+  if(fee<=0){alert("Enter Agreed Fees first.");return}
+  var bca=fee*(1-tgtP);
+  // Check total mix %
+  var totalW=0;KN.forEach(function(n){totalW+=(K[n].w||0)});
+  if(totalW===0){alert("No mix weightage defined. Update the rates table under Definitions & Rates.");return}
+  // Allocate cost budget by mix %, then compute hours from cost rates
+  R=[];
+  KN.forEach(function(n){
+    var w=K[n].w||0;
+    if(w===0)return;
+    var rankCostBudget=bca*(w/totalW);
+    var costRate=K[n].c;
+    var hrs=costRate>0?Math.round(rankCostBudget/costRate):0;
+    if(hrs>0)R.push({r:n,b:hrs,e:0,a:0});
+  });
+  if(!R.length){R=[{r:KN[0],b:0,e:0,a:0}];}
+  render();
+}
 
-// Rate table rendering
+
 function renderRates(){
   var t=document.getElementById("rateTable");
-  var h='<tr style="border-bottom:1px solid var(--ey-border)"><td style="padding:3px 6px;font-family:var(--sans);font-weight:600;color:var(--ey-gray)">Rank</td><td style="padding:3px 6px;text-align:right;font-weight:600;color:var(--ey-gray)">NSR/hr</td><td style="padding:3px 6px;text-align:right;font-weight:600;color:var(--ey-gray)">Cost/hr</td></tr>';
-  KN.forEach(function(n){h+='<tr><td style="padding:3px 6px;font-family:var(--sans)">'+n+'</td><td style="padding:3px 6px;text-align:right">$'+K[n].n+'</td><td style="padding:3px 6px;text-align:right">$'+K[n].c+'</td></tr>';});
+  var h='<tr style="border-bottom:1px solid var(--ey-border)"><td style="padding:3px 6px;font-family:var(--sans);font-weight:600;color:var(--ey-gray)">Rank</td><td style="padding:3px 6px;text-align:right;font-weight:600;color:var(--ey-gray)">NSR/hr</td><td style="padding:3px 6px;text-align:right;font-weight:600;color:var(--ey-gray)">Cost/hr</td><td style="padding:3px 6px;text-align:right;font-weight:600;color:var(--ey-gray)">Mix %</td></tr>';
+  KN.forEach(function(n){h+='<tr><td style="padding:3px 6px;font-family:var(--sans)">'+n+'</td><td style="padding:3px 6px;text-align:right">$'+K[n].n+'</td><td style="padding:3px 6px;text-align:right">$'+K[n].c+'</td><td style="padding:3px 6px;text-align:right">'+(K[n].w||0)+'%</td></tr>';});
   t.innerHTML=h;
 }
 
 // Rate CSV template download
 function dlTemplate(){
-  var rows=["Rank,NSR_per_hr,Cost_per_hr"];
-  KN.forEach(function(n){rows.push('"'+n+'",'+K[n].n+','+K[n].c)});
+  var rows=["Rank,NSR_per_hr,Cost_per_hr,Mix_pct"];
+  KN.forEach(function(n){rows.push('"'+n+'",'+K[n].n+','+K[n].c+','+(K[n].w||0))});
   var b=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8;"});
   var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="rate_template.csv";a.click();
 }
@@ -367,9 +387,10 @@ function importRates(input){
       }
       parts.push(cur.trim());
       if(parts.length<3)continue;
-      var rank=parts[0],nsr=Number(parts[1]),cost=Number(parts[2]);
+      var rank=parts[0],nsr=Number(parts[1]),cost=Number(parts[2]),wt=parts.length>=4?Number(parts[3]):0;
       if(!rank||isNaN(nsr)||isNaN(cost))continue;
-      newK[rank]={n:nsr,c:cost};newKN.push(rank);
+      if(isNaN(wt))wt=0;
+      newK[rank]={n:nsr,c:cost,w:wt};newKN.push(rank);
     }
     if(newKN.length===0){alert("No valid rates found in CSV.");return}
     // Update globals
@@ -380,6 +401,7 @@ function importRates(input){
     if(KN.length>2)R.push({r:KN[Math.min(3,KN.length-1)],b:0,e:0,a:0});
     S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
     document.getElementById("addB").style.display="";
+    document.getElementById("autoB").style.display="";
     renderRates();updUI();render();
     alert("Rates updated: "+newKN.length+" ranks loaded.");
   };
@@ -433,7 +455,6 @@ function updUI(){
     tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;
     bg.innerHTML='<span class="bg bg1">Budget Set</span>';
   }
-  document.getElementById("eL").textContent=S.ed?"EAF (Proj)":"EAF (Bgt)";
   document.getElementById("etcRow").style.display=S.ed?"flex":"none";
 }
 
@@ -445,6 +466,7 @@ function doBgt(){
   S.bL=b.c;S.bT=b.c*tp;S.bC=b.c+S.bT+exp;S.bM=fee-S.bC;S.bMP=fee>0?S.bM/fee:0;
   R.forEach(function(r){r.e=0;r.a=r.b;});
   document.getElementById("addB").style.display="none";
+  document.getElementById("autoB").style.display="none";
   etcLog=[];
   updUI();render();
 }
@@ -475,6 +497,7 @@ function doClr(){
   document.getElementById("engName").value="";
   ["fee","bxp","cxp","bf","bbx"].forEach(function(id){document.getElementById(id).value=""});
   document.getElementById("addB").style.display="";
+  document.getElementById("autoB").style.display="";
   updUI();render();
 }
 
