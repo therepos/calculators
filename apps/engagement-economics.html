@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engagement Economics Calculator v5.4</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ey-yellow:#FFE600;--ey-dark:#1A1A24;--ey-dark2:#2E2E38;--ey-gray:#747480;--ey-gray-light:#A0A0AC;--ey-light-bg:#F4F4F9;--ey-card:#FFFFFF;--ey-border:#DCDCE4;--ey-red:#D6293E;--ey-green:#0F7B3F;--ey-blue:#2563EB;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--ey-light-bg);color:var(--ey-dark);min-height:100vh}
+input[type="number"]{-moz-appearance:textfield}input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.header{background:var(--ey-dark);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--ey-yellow)}
+.header h1{font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.02em}
+.header .ver{font-size:11px;color:var(--ey-gray);margin-top:2px;font-family:var(--mono)}
+.ey-badge{background:var(--ey-yellow);color:var(--ey-dark);font-weight:800;font-size:22px;padding:5px 12px}
+.container{max-width:1060px;margin:0 auto;padding:24px 20px 48px}
+.eng-bar{display:flex;gap:10px;align-items:center;margin-bottom:20px;padding:12px 16px;background:var(--ey-card);border-radius:10px;border:1px solid var(--ey-border)}
+.eng-bar input{flex:1;border:1.5px solid var(--ey-border);border-radius:6px;padding:9px 12px;font-size:14px;font-weight:500;color:var(--ey-dark);outline:none;font-family:var(--sans)}
+.eng-bar input:focus{border-color:var(--ey-yellow)}.eng-bar input::placeholder{color:var(--ey-border)}
+.btn-p{padding:9px 18px;border:none;border-radius:6px;background:var(--ey-yellow);color:var(--ey-dark);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);white-space:nowrap}.btn-p:hover{opacity:.85}
+.btn-o{padding:9px 16px;border:1.5px solid var(--ey-border);border-radius:6px;background:#fff;color:var(--ey-dark);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans)}.btn-o:hover{border-color:var(--ey-yellow);background:var(--ey-yellow)}
+.btn-d{padding:9px 16px;border:1.5px solid var(--ey-border);border-radius:6px;background:#fff;color:var(--ey-red);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans)}.btn-d:hover{border-color:var(--ey-red);background:#FFF0F2}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--ey-card);border-radius:10px;border:1px solid var(--ey-border);padding:18px}
+.card h2{font-size:14px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.card h2 .dot{display:inline-block;width:7px;height:7px;background:var(--ey-yellow);border-radius:2px}
+.card .sub{font-size:11px;color:var(--ey-gray);margin-bottom:14px;line-height:1.4}
+.fl{margin-bottom:14px}.fl-l{display:block;font-size:11px;font-weight:600;color:var(--ey-gray);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.iw{display:flex;align-items:center;border:1.5px solid var(--ey-border);border-radius:6px;overflow:hidden;background:#fff}.iw:focus-within{border-color:var(--ey-yellow)}
+.iw .pfx{padding:8px 0 8px 10px;color:var(--ey-gray);font-weight:600;font-size:13px;font-family:var(--mono)}
+.iw input{flex:1;border:none;outline:none;padding:9px 10px;font-size:14px;font-weight:500;color:var(--ey-dark);background:transparent;font-family:var(--sans);width:100%}
+.rh{display:grid;gap:4px;margin-bottom:4px;padding:0 0 4px 0;border-bottom:1px solid var(--ey-border)}
+.rh span{font-size:9px;font-weight:600;color:var(--ey-gray);text-transform:uppercase;letter-spacing:.04em}
+.rr{display:grid;gap:4px;align-items:center;margin-bottom:4px}
+.c-bgt{grid-template-columns:1.3fr 58px 72px 72px 24px}
+.c-etc{grid-template-columns:1.1fr 44px 44px 44px 44px 58px 58px 22px}
+@media(max-width:680px){.c-bgt{grid-template-columns:1fr 50px 60px 60px 22px}.c-etc{grid-template-columns:1fr 38px 38px 38px 38px 50px 50px 20px}}
+.rr select{width:100%;border:1.5px solid var(--ey-border);border-radius:5px;padding:5px 3px;font-size:10px;color:var(--ey-dark);outline:none;font-family:var(--sans);background:#fff;cursor:pointer;appearance:auto}.rr select:focus{border-color:var(--ey-yellow)}
+.rr input[type="number"]{width:100%;border:1.5px solid var(--ey-border);border-radius:5px;padding:5px 3px;font-size:11px;color:var(--ey-dark);outline:none;font-family:var(--mono);text-align:right}.rr input:focus{border-color:var(--ey-yellow)}
+input.lk{background:var(--ey-light-bg);color:var(--ey-gray);pointer-events:none;border-color:transparent}
+input.etc-i{background:#FFFDE6;border-color:#E8D54A}input.etc-i:focus{border-color:var(--ey-yellow)}
+input.etc-d{background:var(--ey-light-bg);color:var(--ey-gray-light);pointer-events:none;border-color:transparent}
+input.act-i{background:#E8F5E9;border-color:#81C784}input.act-i:focus{border-color:var(--ey-green)}
+input.tot-i{background:#F0F4FF;color:var(--ey-blue);pointer-events:none;border-color:transparent;font-weight:600}
+.rd{font-size:10px;font-family:var(--mono);color:var(--ey-gray);text-align:right;padding:5px 3px;background:var(--ey-light-bg);border-radius:5px}
+.x-btn{background:none;border:none;cursor:pointer;color:var(--ey-red);font-size:15px;font-weight:700;opacity:.4}.x-btn:hover{opacity:1}
+.add-btn{background:none;border:1.5px dashed var(--ey-border);border-radius:6px;padding:6px 0;width:100%;cursor:pointer;color:var(--ey-gray);font-size:11px;font-weight:600;margin-top:4px;font-family:var(--sans)}.add-btn:hover{border-color:var(--ey-yellow);color:var(--ey-dark)}
+.st{padding:9px 12px;background:var(--ey-light-bg);border-radius:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:6px}
+.st .sl{color:var(--ey-gray);font-weight:600}.st .sl small{font-weight:400;font-size:10px}.st .sv{font-weight:700;color:var(--ey-dark);font-size:13px;font-family:var(--mono)}
+.st.w{background:#FFFDE6;border:1px solid #F0E44A}.st.w .sl{color:#7A6D00}.st.w .sv{color:#7A6D00}
+.st.p{background:#F0F4FF;border:1px solid #93B4F5}.st.p .sl{color:var(--ey-blue)}.st.p .sv{color:var(--ey-blue)}
+.dv{border:none;border-top:1px solid var(--ey-border);margin:10px 0 12px}
+.sl-t{font-size:11px;font-weight:600;color:var(--ey-gray);text-transform:uppercase;margin-bottom:8px}
+.mb{background:var(--ey-card);border-radius:10px;border:1px solid var(--ey-border);padding:14px 18px;margin-bottom:6px}
+.mg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;text-align:center}@media(max-width:600px){.mg{grid-template-columns:repeat(3,1fr)}}
+.mc .ml{font-size:9px;font-weight:600;color:var(--ey-gray);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.mc .mv{font-size:15px;font-weight:700;color:var(--ey-dark);font-family:var(--mono)}
+.mc .ms{font-size:11px;font-weight:700;margin-top:1px;font-family:var(--mono)}
+.vbar{background:var(--ey-card);border-radius:10px;border:1px solid var(--ey-border);padding:10px 18px;margin-bottom:6px;display:flex;gap:16px;align-items:center;font-size:12px;flex-wrap:wrap}
+.ebar{background:#F0F4FF;border-radius:10px;border:1px solid #93B4F5;padding:10px 18px;margin-bottom:20px;display:flex;gap:16px;align-items:center;font-size:12px;flex-wrap:wrap}.ebar.hid{display:none}
+.vi{display:flex;align-items:center;gap:5px}.vl{font-weight:600;font-size:11px}.vv{font-weight:700;font-family:var(--mono);font-size:12px}
+.vbar .vl{color:var(--ey-gray)}.ebar .vl{color:var(--ey-blue)}
+.hs{margin-top:24px}.hs h2{font-size:16px;font-weight:700;margin-bottom:10px}
+.hh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ht{width:100%;border-collapse:collapse;background:var(--ey-card);border-radius:8px;overflow:hidden;border:1px solid var(--ey-border);font-size:11px}
+.ht th{background:var(--ey-dark2);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase}
+.ht td{padding:7px 10px;border-bottom:1px solid var(--ey-border);color:var(--ey-dark);font-family:var(--mono);font-size:11px}
+.ht tr:last-child td{border-bottom:none}.ht tr:hover td{background:var(--ey-light-bg)}.ht .n{text-align:right}
+.he{padding:20px;text-align:center;color:var(--ey-gray);font-size:12px;background:var(--ey-card);border-radius:8px;border:1px solid var(--ey-border)}
+.xr{background:none;border:none;cursor:pointer;color:var(--ey-gray);font-size:13px;padding:2px 5px}.xr:hover{color:var(--ey-red)}
+details summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--ey-gray);padding:6px 0}details summary:hover{color:var(--ey-dark)}
+.lg{margin-top:10px;padding:12px 16px;background:var(--ey-card);border-radius:8px;border:1px solid var(--ey-border);font-size:11px;color:var(--ey-gray);line-height:1.7}.lg strong{color:var(--ey-dark)}
+.tabs{display:flex;gap:6px;margin-top:10px;margin-bottom:8px}
+.tab{flex:1;padding:8px 10px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);text-align:center}
+.tab.a1{background:var(--ey-yellow);color:var(--ey-dark)}.tab.a2{background:var(--ey-blue);color:#fff}
+.tab.off{background:var(--ey-border);color:var(--ey-gray);cursor:default;opacity:.5}
+.tab.rdy{background:var(--ey-light-bg);color:var(--ey-dark);border:1.5px solid var(--ey-border)}.tab.rdy:hover{border-color:var(--ey-dark)}
+.bg{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:3px;margin-left:8px}
+.bg1{background:var(--ey-yellow);color:var(--ey-dark)}.bg2{background:var(--ey-blue);color:#fff}
+</style>
+</head>
+<body>
+<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v5.4 — SGD · SG Consulting · FY26</div></div><div class="ey-badge">EY</div></div>
+<div class="container">
+  <div class="eng-bar"><input type="text" id="engName" placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"><span id="badge"></span><button class="btn-p" onclick="save()">Save to History</button></div>
+  <div class="grid2">
+    <!-- LEFT: Resources -->
+    <div class="card">
+      <h2><span class="dot"></span>Resources &amp; Hours</h2>
+      <p class="sub">Plan budget hours, set budget, then track with ETC and actual hours.</p>
+      <div id="hdr"></div>
+      <div id="rows"></div>
+      <button class="add-btn" id="addB" onclick="addR()">+ Add Resource</button>
+      <div class="tabs">
+        <button id="tB" class="tab a1" onclick="doBgt()">Set Budget</button>
+        <button id="tE" class="tab off">Run ETC</button>
+        <button class="tab rdy" onclick="doClr()" style="flex:.5;color:var(--ey-red)">Clear</button>
+      </div>
+      <div id="sB" style="display:none"><div class="st w"><span class="sl">Budget NSR</span><span class="sv" id="vBN">—</span></div></div>
+      <div id="sP" style="display:none"><div class="st p"><span class="sl">Projected NSR <small>(Budget + ETC)</small></span><span class="sv" id="vPN">—</span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+        <div class="st"><span class="sl">Budget</span><span class="sv" id="hB" style="font-size:12px">—</span></div>
+        <div class="st"><span class="sl">Actual</span><span class="sv" id="hA" style="font-size:12px">—</span></div>
+        <div class="st"><span class="sl">ETC Total</span><span class="sv" id="hP" style="font-size:12px">—</span></div>
+      </div>
+    </div>
+    <!-- RIGHT: Fees & Costs -->
+    <div class="card">
+      <h2><span class="dot"></span>Fees, Costs &amp; Billing</h2>
+      <p class="sub">Set fee and target margin to see your cost allowance instantly.</p>
+      <!-- Fee - standalone -->
+      <div class="fl">
+        <label class="fl-l">Agreed / Collectible Fees (ANSR)</label>
+        <div class="iw"><span class="pfx">$</span><input type="number" id="fee" value="0" oninput="calc()"></div>
+      </div>
+      <!-- Budget Cost Allowance: label + target% inline + value right -->
+      <div class="st" style="margin-top:4px;background:#E8F5E9;border:1px solid #81C784">
+        <span class="sl" style="color:#2E7D32">Budget Cost Allowance
+          <span style="display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 6px;background:rgba(255,255,255,.6);border-radius:4px;border:1px solid #81C784">
+            <input type="number" id="tgt" value="35" step=".1" min="0" max="100" oninput="calc()" style="width:30px;border:none;outline:none;background:transparent;font-size:12px;font-weight:700;color:#2E7D32;text-align:right;padding:0;font-family:var(--sans)"><span style="font-size:11px;font-weight:700;color:#2E7D32">%</span>
+          </span>
+        </span>
+        <span class="sv" id="oCA" style="font-size:14px;color:#2E7D32">—</span>
+      </div>
+      <hr class="dv">
+      <!-- Cost breakdown -->
+      <div class="sl-t">Project Cost</div>
+      <div class="st" style="margin-top:4px"><span class="sl">Labour Cost</span><span class="sv" id="oL" style="font-size:13px">—</span></div>
+      <!-- Tech Fee: label + tech% inline + value right -->
+      <div class="st" style="margin-top:4px">
+        <span class="sl">Tech Fee
+          <span style="display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 6px;background:rgba(0,0,0,.04);border-radius:4px;border:1px solid var(--ey-border)">
+            <input type="number" id="tpI" value="0.5" step=".1" min="0" max="10" oninput="document.getElementById('tpD').textContent=this.value;calc()" style="width:30px;border:none;outline:none;background:transparent;font-size:12px;font-weight:700;color:var(--ey-dark);text-align:right;padding:0;font-family:var(--sans)"><span style="font-size:11px;font-weight:700;color:var(--ey-dark)">%</span>
+          </span>
+        </span>
+        <span class="sv" id="oT" style="font-size:13px">—</span>
+      </div>
+      <span id="tpD" style="display:none">0.5</span>
+      <!-- Billable Expenses: same strip as Labour Cost, but value is editable -->
+      <div class="st" style="margin-top:4px">
+        <span class="sl">Billable Expenses</span>
+        <span class="sv" style="font-size:13px"><input type="number" id="bxp" value="0" oninput="calc()" style="width:100px;border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--ey-dark);text-align:right;padding:0;font-family:var(--mono)"></span>
+      </div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Total Projected Cost</strong></span><span class="sv" id="oC" style="font-size:14px">—</span></div>
+      <hr class="dv">
+      <!-- NUI section -->
+      <div class="sl-t">Unbilled Inventory</div>
+      <div class="st" style="margin-top:4px">
+        <span class="sl">Charged Expenses</span>
+        <span class="sv" style="font-size:13px"><input type="number" id="cxp" value="0" oninput="calc()" style="width:100px;border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--ey-dark);text-align:right;padding:0;font-family:var(--mono)"></span>
+      </div>
+      <div class="st" style="margin-top:4px">
+        <span class="sl">Billed Fees</span>
+        <span class="sv" style="font-size:13px"><input type="number" id="bf" value="0" oninput="calc()" style="width:100px;border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--ey-dark);text-align:right;padding:0;font-family:var(--mono)"></span>
+      </div>
+      <div class="st" style="margin-top:4px">
+        <span class="sl">Billed Expenses</span>
+        <span class="sv" style="font-size:13px"><input type="number" id="bbx" value="0" oninput="calc()" style="width:100px;border:none;outline:none;background:transparent;font-size:13px;font-weight:700;color:var(--ey-dark);text-align:right;padding:0;font-family:var(--mono)"></span>
+      </div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Net Unbilled Inventory (NUI)</strong></span><span class="sv" id="oU" style="font-size:14px">—</span></div>
+    </div>
+  </div>
+  <!-- Metrics -->
+  <div class="mb"><div class="mg">
+    <div class="mc"><div class="ml" id="nL">NSR</div><div class="mv" id="oN">—</div></div>
+    <div class="mc"><div class="ml">ANSR (Fees)</div><div class="mv" id="oA">—</div></div>
+    <div class="mc"><div class="ml">TER</div><div class="mv" id="oR">—</div></div>
+    <div class="mc"><div class="ml" id="eL">EAF</div><div class="mv" id="oE">—</div></div>
+    <div class="mc"><div class="ml" id="mL">Margin</div><div class="mv" id="oM">—</div><div class="ms" id="oMP">—</div></div>
+    <div class="mc"><div class="ml">NUI</div><div class="mv" id="oU2">—</div><div class="ms" id="oUS"></div></div>
+  </div></div>
+  <div class="vbar">
+    <div class="vi"><span class="vl">Target:</span><span class="vv" id="vT">—</span></div>
+    <div class="vi"><span class="vl">Projected:</span><span class="vv" id="vPr">—</span></div>
+    <div class="vi"><span class="vl">Variance:</span><span class="vv" id="vV">—</span></div>
+    <div class="vi"><span class="vl">Margin Gap:</span><span class="vv" id="vG">—</span></div>
+  </div>
+  <div class="ebar hid" id="eBar">
+    <div class="vi"><span class="vl">Budget Margin:</span><span class="vv" id="eBM">—</span></div>
+    <div class="vi"><span class="vl">ETC Margin:</span><span class="vv" id="ePM">—</span></div>
+    <div class="vi"><span class="vl">Margin Δ:</span><span class="vv" id="eMD">—</span></div>
+    <div class="vi"><span class="vl">Addtl Hrs:</span><span class="vv" id="eHD">—</span></div>
+  </div>
+  <!-- History -->
+  <div class="hs"><div class="hh"><h2>History Log</h2><div style="display:flex;gap:6px"><button class="btn-o" onclick="expH()">Export CSV</button><button class="btn-d" onclick="clrH()">Clear All</button></div></div><div id="hC"><div class="he">No saved entries yet.</div></div></div>
+  <!-- Guidance -->
+  <details style="margin-top:24px">
+    <summary style="font-size:13px;font-weight:700;color:var(--ey-dark);padding:10px 0">Definitions ▾</summary>
+    <div class="lg" style="margin-top:8px">
+      <strong>NSR</strong> (Net Standard Revenue) = Σ (Hours × NSR Rate/hr). The standard value of resources deployed. NSR rates are fixed for the financial year per rank/country/service line.<br><br>
+      <strong>ANSR</strong> (Adjusted Net Standard Revenue) = the collectible fees agreed with the client. ANSR = NSR × (1 + EAF%). This is the revenue recognized from time charges.<br><br>
+      <strong>EAF</strong> (Engagement Adjustment Factor) = (ANSR ÷ NSR) − 1. The premium or discount vs standard rates. Positive = charging above standard. Negative = discount. One EAF applies to all hours on the engagement.<br><br>
+      <strong>TER</strong> (Total Engagement Revenue) = ANSR + Billable Expenses. The total amount collectible from the client.<br><br>
+      <strong>Margin</strong> = ANSR − (Labour Cost + Tech Fee + Expenses). Labour cost uses actual cost rates per rank, not NSR. Tech Fee = 0.5% of labour cost (varies by service code).<br><br>
+      <strong>NUI</strong> (Net Unbilled Inventory) = (Recognized ANSR + Charged Expenses) − (Billed Fees + Billed Expenses).<br>
+      &nbsp;&nbsp;NUI &gt; 0 → work done but not yet billed (collection risk)<br>
+      &nbsp;&nbsp;NUI = 0 → billed exactly what has been recognized<br>
+      &nbsp;&nbsp;NUI &lt; 0 → billed ahead of work performed (advance/milestone billing)<br><br>
+      <strong>Budget Cost Allowance</strong> = Fee × (1 − Target Margin%). The maximum you can spend to hit your margin target. If Total Projected Cost exceeds this, margin will be below target.
+    </div>
+    <div class="lg" style="margin-top:8px"><strong>Rates (SGD, SG Consulting, FY26):</strong><br>
+      Partner $621/$993 | Director $454/$381 | SM $384/$320 | Mgr $223/$128<br>
+      SA3 $176/$92 | SA2 $159/$82 | SA1 $138/$79 | Staff $93/$64 | Intern $2/$9<br>
+      <small>Format: NSR rate / Cost rate per hour</small></div>
+  </details>
+</div>
+<script>
+var K={"Partner/Principal":{n:621,c:993},"Director":{n:454,c:381},"Senior Manager":{n:384,c:320},"Manager":{n:223,c:128},"Senior Associate 3":{n:176,c:92},"Senior Associate 2":{n:159,c:82},"Senior Associate 1":{n:138,c:79},"Associate / Staff":{n:93,c:64},"Intern (CS)":{n:2,c:9}};
+var KN=Object.keys(K);
+var R=[{r:"Partner/Principal",b:0,e:0,a:0},{r:"Senior Manager",b:0,e:0,a:0},{r:"Manager",b:0,e:0,a:0},{r:"Senior Associate 1",b:0,e:0,a:0},{r:"Associate / Staff",b:0,e:0,a:0}];
+var S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
+
+function fm(v){if(v==null||isNaN(v))return"\u2014";if(v<0)return"("+Math.abs(v).toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0})+")";return v.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0})}
+function f2(v){if(v==null||isNaN(v))return"\u2014";if(v<0)return"("+Math.abs(v).toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2})+")";return v.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2})}
+function pc(v){if(v==null||isNaN(v))return"\u2014";if(v<0)return"("+(Math.abs(v)*100).toFixed(2)+"%)";return(v*100).toFixed(2)+"%"}
+function gv(id){return Number(document.getElementById(id).value)||0}
+function sm(fn){var n=0,c=0;R.forEach(function(r){var k=K[r.r]||{n:0,c:0};var h=fn(r);n+=h*k.n;c+=h*k.c});return{n:n,c:c}}
+
+function committedTot(r){return S.ed?(r.b+r.e):r.b}
+function actH(r){return r.a}
+
+function onEE(){calc()}
+
+function render(){
+  var h=document.getElementById("hdr"),c=document.getElementById("rows");
+  if(S.lk){
+    h.innerHTML='<div class="rh c-etc"><span>Rank</span><span style="text-align:right">Bgt</span><span style="text-align:right;color:#7A6D00">ETC(+)</span><span style="text-align:right;color:var(--ey-blue)">Total</span><span style="text-align:right;color:#2E7D32">Actual</span><span style="text-align:right">NSR</span><span style="text-align:right">Cost</span><span></span></div>';
+  } else {
+    h.innerHTML='<div class="rh c-bgt"><span>Rank</span><span style="text-align:right">Hours</span><span style="text-align:right">NSR/hr</span><span style="text-align:right">Cost/hr</span><span></span></div>';
+  }
+  c.innerHTML="";
+  R.forEach(function(r,i){
+    var k=K[r.r]||{n:0,c:0};var row=document.createElement("div");
+    row.className=S.lk?"rr c-etc":"rr c-bgt";
+    var opts='<option value="">\u2014\u2014</option>';KN.forEach(function(n){opts+='<option value="'+n+'"'+(r.r===n?' selected':'')+'>'+n+'</option>';});
+    var sel='<div><select onchange="R['+i+'].r=this.value;render()"'+(S.lk?' disabled style="opacity:.6;cursor:default"':'')+'>'+opts+'</select></div>';
+    var rm='<div>'+(R.length>1&&!S.lk?'<button class="x-btn" onclick="R.splice('+i+',1);render()">\u00d7</button>':'<div style="width:18px"></div>')+'</div>';
+    if(S.lk){
+      row.innerHTML=sel+
+        '<div><input type="number" class="lk" value="'+r.b+'" tabindex="-1"></div>'+
+        '<div><input type="number" class="'+(S.etcOpen?'etc-i':'etc-d')+'" min="0" value="'+r.e+'"'+(S.etcOpen?' oninput="R['+i+'].e=Number(this.value)||0;onEE()"':' tabindex="-1"')+'></div>'+
+        '<div><input type="number" class="tot-i" value="'+(S.etcOpen?(r.b+r.e):committedTot(r))+'" tabindex="-1"></div>'+
+        '<div><input type="number" class="act-i" min="0" value="'+r.a+'" oninput="R['+i+'].a=Number(this.value)||0;calc()"></div>'+
+        '<div class="rd">'+k.n+'</div><div class="rd">'+k.c+'</div>'+rm;
+    } else {
+      row.innerHTML=sel+
+        '<div><input type="number" min="0" value="'+r.b+'" oninput="R['+i+'].b=Number(this.value)||0;R['+i+'].e=0;R['+i+'].a=0;calc()"></div>'+
+        '<div class="rd">'+k.n+'</div><div class="rd">'+k.c+'</div>'+rm;
+    }
+    c.appendChild(row);
+  });
+  calc();
+}
+
+function addR(){if(S.lk)return;R.push({r:KN[0],b:0,e:0,a:0});render()}
+
+function updUI(){
+  var tB=document.getElementById("tB"),tE=document.getElementById("tE"),bg=document.getElementById("badge");
+  if(!S.lk){
+    tB.className="tab a1";tE.className="tab off";tE.textContent="Run ETC";tE.onclick=doEtc;
+    bg.innerHTML='<span class="bg bg1">Budget</span>';
+  } else if(S.etcOpen){
+    // ETC open for editing — button becomes "Transfer ETC"
+    tB.className="tab off";tE.className="tab rdy";tE.textContent="Transfer ETC";tE.onclick=doTransferEtc;
+    bg.innerHTML='<span class="bg bg1">Budget Set</span>';
+  } else if(S.ed){
+    // ETC transferred
+    tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;
+    bg.innerHTML='<span class="bg bg2">ETC Done</span>';
+  } else {
+    // Budget set, ETC not yet run
+    tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;
+    bg.innerHTML='<span class="bg bg1">Budget Set</span>';
+  }
+  document.getElementById("nL").textContent=S.ed?"NSR (Proj)":"NSR (Bgt)";
+  document.getElementById("eL").textContent=S.ed?"EAF (Proj)":"EAF (Bgt)";
+  document.getElementById("mL").textContent=S.ed?"Margin (Proj)":"Margin (Bgt)";
+}
+
+function doBgt(){
+  if(S.lk)return;
+  var b=sm(function(r){return r.b});var tp=gv("tpI")/100,fee=gv("fee"),exp=gv("bxp");
+  S.lk=true;S.ed=false;
+  S.bN=b.n;S.bE=(b.n>0&&fee>0)?(fee/b.n)-1:0;
+  S.bL=b.c;S.bT=b.c*tp;S.bC=b.c+S.bT+exp;S.bM=fee-S.bC;S.bMP=fee>0?S.bM/fee:0;
+  R.forEach(function(r){r.e=0;r.a=r.b;});
+  document.getElementById("sB").style.display="";document.getElementById("sP").style.display="";
+  document.getElementById("vBN").textContent=f2(b.n);
+  document.getElementById("addB").style.display="none";
+  updUI();render();
+}
+
+function doEtc(){
+  if(!S.lk)return;
+  S.etcOpen=true;
+  updUI();render();
+}
+
+function doTransferEtc(){
+  if(!S.lk||!S.etcOpen)return;
+  S.etcOpen=false;S.ed=true;
+  document.getElementById("eBar").classList.remove("hid");
+  // Brief flash on button to confirm transfer
+  var tE=document.getElementById("tE");
+  tE.textContent="Transferred!";tE.className="tab a2";
+  setTimeout(function(){updUI();calc();render();},800);
+}
+
+function doClr(){
+  R=[{r:"Partner/Principal",b:0,e:0,a:0},{r:"Senior Manager",b:0,e:0,a:0},{r:"Manager",b:0,e:0,a:0},{r:"Senior Associate 1",b:0,e:0,a:0},{r:"Associate / Staff",b:0,e:0,a:0}];
+  S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
+  document.getElementById("engName").value="";
+  ["fee","bxp","cxp","bf","bbx"].forEach(function(id){document.getElementById(id).value=0});
+  document.getElementById("sB").style.display="none";document.getElementById("sP").style.display="none";
+  document.getElementById("eBar").classList.add("hid");
+  document.getElementById("addB").style.display="";
+  updUI();render();
+}
+
+function calc(){
+  var m=sm(function(r){return committedTot(r)});
+  var nsr=m.n,lab=m.c;
+  var tp=gv("tpI")/100,tech=lab*tp;
+  var bH=R.reduce(function(s,r){return s+r.b},0);
+  var tH=R.reduce(function(s,r){return s+(r.b+r.e)},0);
+  var cH=R.reduce(function(s,r){return s+committedTot(r)},0);
+  var aH=R.reduce(function(s,r){return s+actH(r)},0);
+
+  var fee=gv("fee"),bxp=gv("bxp"),cxp=gv("cxp"),bf=gv("bf"),bbx=gv("bbx"),tgtP=gv("tgt")/100;
+
+  var eaf=nsr>0?(fee/nsr)-1:0,ter=fee+bxp;
+  var cost=lab+tech+bxp,mgn=fee-cost,mp=fee>0?mgn/fee:0;
+
+  // NUI
+  var act=sm(actH);
+  var nuiEaf;
+  if(S.lk&&S.ed){
+    var pNsr=sm(committedTot).n;
+    nuiEaf=(pNsr>0&&fee>0)?(fee/pNsr)-1:0;
+  } else if(S.lk){
+    nuiEaf=(S.bN>0&&fee>0)?(fee/S.bN)-1:0;
+  } else {nuiEaf=0;}
+  var aRec=act.n*(1+nuiEaf);
+  var nui=(aRec+cxp)-(bf+bbx);
+  var bca=fee>0?fee*(1-tgtP):0;
+
+  if(S.lk){S.bE=(S.bN>0&&fee>0)?(fee/S.bN)-1:0;S.bC=S.bL+S.bT+bxp;S.bM=fee-S.bC;S.bMP=fee>0?S.bM/fee:0;}
+
+  // Update total cells
+  if(S.lk){var tc=document.querySelectorAll("input.tot-i");R.forEach(function(r,i){if(tc[i])tc[i].value=S.etcOpen?(r.b+r.e):committedTot(r);});}
+
+  // Strips
+  if(S.lk){document.getElementById("vPN").textContent=f2(nsr);}
+  document.getElementById("hB").textContent=bH+" hrs";
+  var hAE=document.getElementById("hA");hAE.textContent=aH+" hrs";
+  hAE.style.color=aH>cH?"var(--ey-red)":"var(--ey-dark)";
+  document.getElementById("hP").textContent=cH+" hrs";
+  // Metrics
+  document.getElementById("oN").textContent=fm(nsr);
+  document.getElementById("oA").textContent=fm(fee);
+  document.getElementById("oR").textContent=fm(ter);
+  document.getElementById("oE").textContent=pc(eaf);
+  document.getElementById("oL").textContent=f2(lab);
+  document.getElementById("oT").textContent=f2(tech);
+  document.getElementById("oC").textContent=f2(cost);
+  document.getElementById("oC").style.color=(cost>bca&&fee>0)?"var(--ey-red)":"var(--ey-dark)";
+  document.getElementById("oCA").textContent=fee>0?f2(bca):"\u2014";
+  var mE=document.getElementById("oM");mE.textContent=f2(mgn);mE.style.color=mgn<0?"var(--ey-red)":"var(--ey-dark)";
+  var mpE=document.getElementById("oMP");mpE.textContent=pc(mp)+" margin";mpE.style.color=mp<0?"var(--ey-red)":mp>=.3?"var(--ey-green)":"var(--ey-dark)";
+
+  // NUI display — inline row + metrics bar
+  if(aH>0||cxp>0||bf>0||bbx>0){
+    var nuiColor=nui>0?"var(--ey-red)":nui<0?"var(--ey-green)":"var(--ey-dark)";
+    document.getElementById("oU").textContent=f2(nui);
+    document.getElementById("oU").style.color=nuiColor;
+    document.getElementById("oU2").textContent=fm(nui);
+    document.getElementById("oU2").style.color=nuiColor;
+    var ns=document.getElementById("oUS");
+    if(nui>0){ns.textContent="unbilled";ns.style.color="var(--ey-red)";}
+    else if(nui<0){ns.textContent="overbilled";ns.style.color="var(--ey-green)";}
+    else{ns.textContent="fully billed";ns.style.color="var(--ey-dark)";}
+  } else{
+    document.getElementById("oU").textContent="\u2014";document.getElementById("oU").style.color="var(--ey-gray)";
+    document.getElementById("oU2").textContent="\u2014";document.getElementById("oU2").style.color="var(--ey-gray)";
+    document.getElementById("oUS").textContent="";
+  }
+
+  // Target variance
+  var bMV=fee*tgtP,vP=mp-tgtP,vV=mgn-bMV;
+  document.getElementById("vT").textContent=pc(tgtP);document.getElementById("vPr").textContent=pc(mp);
+  var vE=document.getElementById("vV");vE.textContent=(vP>=0?"\u25b2 ":"\u25bc ")+pc(Math.abs(vP));vE.style.color=vP>=0?"var(--ey-green)":"var(--ey-red)";
+  var gE=document.getElementById("vG");gE.textContent=(vV>=0?"\u25b2 ":"\u25bc ")+f2(Math.abs(vV));gE.style.color=vV>=0?"var(--ey-green)":"var(--ey-red)";
+
+  // ETC vs Budget bar
+  if(S.lk&&S.ed){
+    document.getElementById("eBM").textContent=f2(S.bM)+" ("+pc(S.bMP)+")";
+    document.getElementById("ePM").textContent=f2(mgn)+" ("+pc(mp)+")";
+    var mi=mgn-S.bM;document.getElementById("eMD").textContent=(mi>=0?"\u25b2 ":"\u25bc ")+f2(Math.abs(mi));document.getElementById("eMD").style.color=mi>=0?"var(--ey-green)":"var(--ey-red)";
+    var ho=tH-bH;document.getElementById("eHD").textContent=(ho>=0?"+":"")+ho+" hrs";document.getElementById("eHD").style.color=ho>0?"var(--ey-red)":ho<0?"var(--ey-green)":"var(--ey-dark)";
+  }
+}
+
+// History
+var HL=[];
+function save(){
+  var nm=document.getElementById("engName").value.trim();if(!nm){alert("Enter name.");return}
+  var m=sm(function(r){return committedTot(r)});var tp=gv("tpI")/100,tc=m.c*tp,fee=gv("fee"),exp=gv("bxp");
+  var cost=m.c+tc+exp,eaf=m.n>0?(fee/m.n)-1:0,ter=fee+exp;
+  var mgn=fee-cost,mp=fee>0?mgn/fee:0;
+  var act=sm(actH);var nuiE;
+  if(S.lk&&S.ed){var pN=sm(committedTot).n;nuiE=(pN>0&&fee>0)?(fee/pN)-1:0;}
+  else if(S.lk){nuiE=(S.bN>0&&fee>0)?(fee/S.bN)-1:0;}else{nuiE=0;}
+  var nui=(act.n*(1+nuiE)+gv("cxp"))-(gv("bf")+gv("bbx"));
+  var mH=R.reduce(function(s,r){return s+committedTot(r)},0);
+  var aH2=R.reduce(function(s,r){return s+r.a},0);
+  HL.push({d:new Date().toLocaleString(),nm:nm+(S.ed?" [ETC]":" [Bgt]"),aH:aH2,h:mH,nsr:m.n,fee:fee,ter:ter,eaf:eaf,cost:cost,mgn:mgn,mp:mp,nui:nui});
+  rH();var b=document.querySelector(".btn-p");b.textContent="Saved!";b.style.background="var(--ey-green)";b.style.color="#fff";
+  setTimeout(function(){b.textContent="Save to History";b.style.background="";b.style.color=""},1000);
+}
+function delH(i){HL.splice(i,1);rH()}function clrH(){if(!HL.length)return;if(!confirm("Clear?"))return;HL=[];rH()}
+function rH(){
+  var c=document.getElementById("hC");if(!HL.length){c.innerHTML='<div class="he">No saved entries yet.</div>';return}
+  var h='<div style="overflow-x:auto"><table class="ht"><thead><tr><th></th><th>Date</th><th>Engagement</th><th class="n">Actual</th><th class="n">Proj</th><th class="n">NSR</th><th class="n">Fee</th><th class="n">EAF</th><th class="n">Cost</th><th class="n">Margin</th><th class="n">Mgn%</th><th class="n">NUI</th></tr></thead><tbody>';
+  HL.forEach(function(s,i){var mc=s.mgn<0?"var(--ey-red)":"var(--ey-dark)";var nc=s.nui>0?"var(--ey-red)":"var(--ey-dark)";
+    h+='<tr><td><button class="xr" onclick="delH('+i+')">\u00d7</button></td><td style="white-space:nowrap;font-family:var(--sans);font-size:10px">'+s.d+'</td><td style="font-family:var(--sans);font-weight:600">'+s.nm+'</td><td class="n">'+s.aH+'</td><td class="n">'+s.h+'</td><td class="n">'+fm(s.nsr)+'</td><td class="n">'+fm(s.fee)+'</td><td class="n">'+pc(s.eaf)+'</td><td class="n">'+f2(s.cost)+'</td><td class="n" style="color:'+mc+'">'+f2(s.mgn)+'</td><td class="n" style="color:'+mc+'">'+pc(s.mp)+'</td><td class="n" style="color:'+nc+'">'+fm(s.nui)+'</td></tr>';});
+  h+='</tbody></table></div>';c.innerHTML=h;
+}
+function expH(){
+  if(!HL.length)return;var rows=["Date,Engagement,Actual Hrs,Proj Hrs,NSR,Fee,EAF,Cost,Margin,Margin%,NUI"];
+  HL.forEach(function(s){rows.push(['"'+s.d+'"','"'+s.nm.replace(/"/g,'""')+'"',s.aH,s.h,s.nsr.toFixed(2),s.fee.toFixed(2),(s.eaf*100).toFixed(2)+"%",s.cost.toFixed(2),s.mgn.toFixed(2),(s.mp*100).toFixed(2)+"%",s.nui.toFixed(2)].join(","))});
+  var b=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8;"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="engagement_economics.csv";a.click();
+}
+render();updUI();
+</script>
+<script src="/scripts/nav.js"></script>
+</body>
+</html>
