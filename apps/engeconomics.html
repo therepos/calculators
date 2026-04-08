@@ -107,7 +107,7 @@ input[type="file"]{display:none}
 </head>
 <body>
 
-<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.4</div></div></div>
+<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v6.6</div></div></div>
 <div class="container">
   <div class="eng-bar"><input type="text" id="engName" placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"><span id="badge"></span><button class="btn-p" onclick="save()">Save to History</button></div>
   <div class="grid2">
@@ -335,20 +335,21 @@ function autoAlloc(){
   var fee=gv("fee"),tgtP=gv("tgt")/100;
   if(fee<=0){alert("Enter Agreed Fees first.");return}
   var bca=fee*(1-tgtP);
-  // Check total mix %
-  var totalW=0;KN.forEach(function(n){totalW+=(K[n].w||0)});
-  if(totalW===0){alert("No mix weightage defined. Update the rates table under Definitions & Rates.");return}
-  // Allocate cost budget by mix %, then compute hours from cost rates
-  R=[];
-  KN.forEach(function(n){
-    var w=K[n].w||0;
-    if(w===0)return;
+  // Get weightage for ranks currently in the resource list
+  var totalW=0;
+  R.forEach(function(r){totalW+=(K[r.r]&&K[r.r].w||0)});
+  if(totalW===0){alert("None of the current ranks have mix weightage defined. Check the rates table under Definitions & Rates.");return}
+  // Distribute cost budget proportionally among existing ranks
+  R.forEach(function(r){
+    var w=K[r.r]&&K[r.r].w||0;
+    if(w===0){r.b=0;return}
     var rankCostBudget=bca*(w/totalW);
-    var costRate=K[n].c;
-    var hrs=costRate>0?Math.round(rankCostBudget/costRate):0;
-    if(hrs>0)R.push({r:n,b:hrs,e:0,a:0});
+    var costRate=K[r.r].c;
+    r.b=costRate>0?Math.round(rankCostBudget/costRate):0;
+    r.e=0;r.a=0;
   });
-  if(!R.length){R=[{r:KN[0],b:0,e:0,a:0}];}
+  // Sort by seniority (order in KN = most senior first)
+  R.sort(function(a,b){return KN.indexOf(a.r)-KN.indexOf(b.r)});
   render();
 }
 
