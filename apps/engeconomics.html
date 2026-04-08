@@ -107,7 +107,7 @@ input[type="file"]{display:none}
 </head>
 <body>
 
-<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v5.6</div></div></div>
+<div class="header"><div><h1>Engagement Economics Calculator</h1><div class="ver">v5.8</div></div></div>
 <div class="container">
   <div class="eng-bar"><input type="text" id="engName" placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"><span id="badge"></span><button class="btn-p" onclick="save()">Save to History</button></div>
   <div class="grid2">
@@ -123,8 +123,7 @@ input[type="file"]{display:none}
         <button id="tE" class="tab off">Run ETC</button>
         <button class="tab rdy" onclick="doClr()" style="flex:.5;color:var(--ey-red)">Clear</button>
       </div>
-      <div id="sB" style="display:none"><div class="st w"><span class="sl">Budget NSR</span><span class="sv" id="vBN">—</span></div></div>
-      <div id="sP" style="display:none"><div class="st p"><span class="sl">Projected NSR</span><span class="sv" id="vPN">—</span></div></div>
+      <div id="bookEst" style="display:none"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
         <div class="st"><span class="sl">Budget</span><span class="sv" id="hB" style="font-size:12px">—</span></div>
         <div class="st"><span class="sl">Actual</span><span class="sv" id="hA" style="font-size:12px">—</span></div>
@@ -132,23 +131,32 @@ input[type="file"]{display:none}
       </div>
       <div id="bookEst" style="display:none"></div>
     </div>
-    <!-- RIGHT: Fees & Costs -->
+    <!-- RIGHT: Budget, Cost & Billing -->
     <div class="card">
-      <h2><span class="dot"></span>Fees, Costs &amp; Billing</h2>
-      <p class="sub">Set fee and target margin to see your cost allowance instantly.</p>
+      <h2><span class="dot"></span>Budget, Cost &amp; Billing</h2>
+      <p class="sub">Set fee and target margin, then track cost and billing.</p>
+      <!-- BUDGET section -->
+      <div class="sl-t">Budget</div>
       <div class="fl">
-        <label class="fl-l">Agreed / Collectible Fees (ANSR)</label>
+        <label class="fl-l">Agreed Fees</label>
         <div class="iw"><span class="pfx">$</span><input type="number" id="fee" value="" placeholder="—" oninput="calc()"></div>
       </div>
       <div class="st" style="margin-top:4px;background:#E8F5E9;border:1px solid #81C784">
-        <span class="sl" style="color:#2E7D32">Budget Cost Allowance
+        <span class="sl" style="color:#2E7D32">Target Margin
           <span style="display:inline-flex;align-items:center;gap:2px;margin-left:6px;padding:1px 6px;background:rgba(255,255,255,.6);border-radius:4px;border:1px solid #81C784">
             <input type="number" id="tgt" value="35" step=".1" min="0" max="100" oninput="calc()" style="width:30px;border:none;outline:none;background:transparent;font-size:12px;font-weight:700;color:#2E7D32;text-align:right;padding:0;font-family:var(--sans)"><span style="font-size:11px;font-weight:700;color:#2E7D32">%</span>
           </span>
         </span>
-        <span class="sv" id="oCA" style="font-size:14px;color:#2E7D32">—</span>
+        <span class="sv" id="oTgtM" style="color:#2E7D32">—</span>
       </div>
+      <div class="st" style="margin-top:4px;background:#E8F5E9;border:1px solid #81C784">
+        <span class="sl" style="color:#2E7D32">Cost Allowance</span>
+        <span class="sv" id="oCA" style="color:#2E7D32">—</span>
+      </div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Budget Margin</strong></span><span class="sv" id="oBM">—</span></div>
+      <div id="oBMP" style="text-align:right;font-size:12px;font-family:var(--mono);font-weight:700;margin-top:2px;padding-right:6px">—</div>
       <hr class="dv">
+      <!-- PROJECT COST section -->
       <div class="sl-t">Project Cost</div>
       <div class="st" style="margin-top:4px"><span class="sl">Labour Cost</span><span class="sv" id="oL">—</span></div>
       <div class="st" style="margin-top:4px">
@@ -164,9 +172,13 @@ input[type="file"]{display:none}
         <span class="sl">Billable Expenses</span>
         <span class="sv"><input type="number" id="bxp" value="" placeholder="—" oninput="calc()" class="ed-in"></span>
       </div>
-      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Total Projected Cost</strong></span><span class="sv" id="oC" style="font-size:14px">—</span></div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Projected Cost</strong></span><span class="sv" id="oC" style="font-size:14px">—</span></div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Projected Margin</strong></span><span class="sv" id="oPM" style="font-size:14px">—</span></div>
+      <div id="oPMP" style="text-align:right;font-size:12px;font-family:var(--mono);font-weight:700;margin-top:2px;padding-right:6px">—</div>
       <hr class="dv">
+      <!-- UNBILLED INVENTORY section -->
       <div class="sl-t">Unbilled Inventory</div>
+      <div class="st" style="margin-top:4px"><span class="sl">ANSR</span><span class="sv" id="oANSR">—</span></div>
       <div class="st" style="margin-top:4px">
         <span class="sl">Charged Expenses</span>
         <span class="sv"><input type="number" id="cxp" value="" placeholder="—" oninput="calc()" class="ed-in"></span>
@@ -179,19 +191,13 @@ input[type="file"]{display:none}
         <span class="sl">Billed Expenses</span>
         <span class="sv"><input type="number" id="bbx" value="" placeholder="—" oninput="calc()" class="ed-in"></span>
       </div>
-      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">Net Unbilled Inventory (NUI)</strong></span><span class="sv" id="oU" style="font-size:14px">—</span></div>
+      <div class="st" style="margin-top:4px"><span class="sl"><strong style="color:var(--ey-dark)">NUI</strong></span><span class="sv" id="oU" style="font-size:14px">—</span></div>
+      <div id="oUStatus" style="text-align:right;font-size:11px;font-weight:700;margin-top:2px;padding-right:6px"></div>
     </div>
   </div>
 
-  <!-- Dashboard -->
+  <!-- Dashboard — Reference Parameters -->
   <div class="dash">
-    <div class="dash-perf">
-      <div class="kpi"><div class="kl">Target Margin</div><div class="kv" id="kTM">—</div><div class="ks" id="kTMP">—</div></div>
-      <div class="kpi"><div class="kl">Budget Margin</div><div class="kv" id="kBM">—</div><div class="ks" id="kBMP">—</div></div>
-      <div class="kpi" id="kPMBox"><div class="kl">Projected Margin</div><div class="kv" id="kPM">—</div><div class="ks" id="kPMP">—</div></div>
-      <div class="kpi"><div class="kl">NUI</div><div class="kv" id="oU2">—</div><div class="ks" id="oUS"></div></div>
-    </div>
-    <hr class="dash-div">
     <div class="dash-params">
       <div class="vi"><span class="vl">NSR</span><span class="vv" id="oN">—</span></div>
       <div class="vi"><span class="vl">ANSR</span><span class="vv" id="oA">—</span></div>
@@ -236,7 +242,7 @@ input[type="file"]{display:none}
 </div>
 
 <script>
-var K={"Partner/Principal":{n:621,c:993},"Director":{n:454,c:381},"Senior Manager":{n:384,c:320},"Manager":{n:223,c:128},"Senior Associate 3":{n:176,c:92},"Senior Associate 2":{n:159,c:82},"Senior Associate 1":{n:138,c:79},"Associate / Staff":{n:93,c:64},"Intern (CS)":{n:2,c:9}};
+var K={"Partner/Principal":{n:621,c:993},"Director":{n:454,c:381},"Senior Manager":{n:384,c:320},"Manager":{n:223,c:128},"Senior Associate 3":{n:176,c:92},"Senior Associate 2":{n:159,c:82},"Senior Associate 1":{n:138,c:79},"Associate / Staff":{n:93,c:64},"Intern (CS)":{n:45,c:9}};
 var KN=Object.keys(K);
 var R=[{r:"Partner/Principal",b:0,e:0,a:0},{r:"Senior Manager",b:0,e:0,a:0},{r:"Manager",b:0,e:0,a:0},{r:"Senior Associate 1",b:0,e:0,a:0},{r:"Associate / Staff",b:0,e:0,a:0}];
 var S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
@@ -375,7 +381,6 @@ function importRates(input){
     if(KN.length>1)R.push({r:KN[Math.min(2,KN.length-1)],b:0,e:0,a:0});
     if(KN.length>2)R.push({r:KN[Math.min(3,KN.length-1)],b:0,e:0,a:0});
     S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};
-    document.getElementById("sB").style.display="none";document.getElementById("sP").style.display="none";
     document.getElementById("addB").style.display="";
     renderRates();updUI();render();
     alert("Rates updated: "+newKN.length+" ranks loaded.");
@@ -441,8 +446,6 @@ function doBgt(){
   S.bN=b.n;S.bE=(b.n>0&&fee>0)?(fee/b.n)-1:0;
   S.bL=b.c;S.bT=b.c*tp;S.bC=b.c+S.bT+exp;S.bM=fee-S.bC;S.bMP=fee>0?S.bM/fee:0;
   R.forEach(function(r){r.e=0;r.a=r.b;});
-  document.getElementById("sB").style.display="";document.getElementById("sP").style.display="";
-  document.getElementById("vBN").textContent=fa(b.n);
   document.getElementById("addB").style.display="none";
   etcLog=[];
   updUI();render();
@@ -473,7 +476,6 @@ function doClr(){
   etcLog=[];
   document.getElementById("engName").value="";
   ["fee","bxp","cxp","bf","bbx"].forEach(function(id){document.getElementById(id).value=""});
-  document.getElementById("sB").style.display="none";document.getElementById("sP").style.display="none";
   document.getElementById("addB").style.display="";
   updUI();render();
 }
@@ -508,94 +510,76 @@ function calc(){
 
   var on=active();
 
-  // Strips
-  if(S.lk){document.getElementById("vPN").textContent=fa(nsr);}
+  // Hours strips
   document.getElementById("hB").textContent=bH+" hrs";
   var hAE=document.getElementById("hA");hAE.textContent=aH+" hrs";
   hAE.style.color=aH>cH?"var(--ey-red)":"var(--ey-dark)";
   document.getElementById("hP").textContent=cH+" hrs";
 
-  // Right panel
+  // BUDGET section
+  // Target Margin $ and Cost Allowance
+  if(on&&fee>0){
+    var tgtMgn=fee*tgtP;
+    document.getElementById("oTgtM").textContent=fa(tgtMgn);
+    document.getElementById("oCA").textContent=fa(bca);
+  } else {
+    document.getElementById("oTgtM").textContent="\u2014";
+    document.getElementById("oCA").textContent="\u2014";
+  }
+  // Budget Margin
+  if(on&&S.lk){
+    document.getElementById("oBM").textContent=fa(S.bM);
+    document.getElementById("oBM").style.color=S.bM<0?"var(--ey-red)":"var(--ey-dark)";
+    document.getElementById("oBMP").textContent=pc(S.bMP);
+    document.getElementById("oBMP").style.color=S.bMP<0?"var(--ey-red)":S.bMP>=.3?"var(--ey-green)":"var(--ey-dark)";
+  } else if(on&&fee>0){
+    document.getElementById("oBM").textContent=fa(mgn);
+    document.getElementById("oBM").style.color=mgn<0?"var(--ey-red)":"var(--ey-dark)";
+    document.getElementById("oBMP").textContent=pc(mp);
+    document.getElementById("oBMP").style.color=mp<0?"var(--ey-red)":mp>=.3?"var(--ey-green)":"var(--ey-dark)";
+  } else {
+    document.getElementById("oBM").textContent="\u2014";document.getElementById("oBM").style.color="var(--ey-dark)";
+    document.getElementById("oBMP").textContent="\u2014";document.getElementById("oBMP").style.color="var(--ey-gray)";
+  }
+
+  // PROJECT COST section
   document.getElementById("oL").textContent=on?fa(lab):"\u2014";
   document.getElementById("oT").textContent=on?fa(tech):"\u2014";
   var cE=document.getElementById("oC");cE.textContent=on?fa(cost):"\u2014";
   cE.style.color=(on&&cost>bca&&fee>0)?"var(--ey-red)":"var(--ey-dark)";
-  document.getElementById("oCA").textContent=(on&&fee>0)?fa(bca):"\u2014";
+  // Projected Margin
+  var pmE=document.getElementById("oPM");pmE.textContent=on?fa(mgn):"\u2014";
+  pmE.style.color=(on&&mgn<0)?"var(--ey-red)":"var(--ey-dark)";
+  var pmpE=document.getElementById("oPMP");
+  pmpE.textContent=on&&fee>0?pc(mp):"\u2014";
+  pmpE.style.color=(on&&mp<0)?"var(--ey-red)":(on&&mp>=.3)?"var(--ey-green)":"var(--ey-dark)";
 
-  // NUI in right panel
+  // UNBILLED INVENTORY section
+  // ANSR (recognized from actual hours)
+  var dispANSR=S.lk?aRec:(nsr>0?fee:0);
+  document.getElementById("oANSR").textContent=on?fa(Math.round(dispANSR*100)/100):"\u2014";
+  // NUI
   if(on&&(aH>0||cxp>0||bf>0||bbx>0)){
     var nuiColor=nui>0?"var(--ey-red)":nui<0?"var(--ey-green)":"var(--ey-dark)";
     document.getElementById("oU").textContent=fa(nui);
     document.getElementById("oU").style.color=nuiColor;
-    document.getElementById("oU2").textContent=fa0(nui);
-    document.getElementById("oU2").style.color=nuiColor;
-    var ns=document.getElementById("oUS");
-    if(nui>0){ns.textContent="unbilled";ns.style.color="var(--ey-red)";}
+    var ns=document.getElementById("oUStatus");
+    if(nui>0){ns.textContent="overrun — unbilled";ns.style.color="var(--ey-red)";}
     else if(nui<0){ns.textContent="overbilled";ns.style.color="var(--ey-green)";}
     else{ns.textContent="fully billed";ns.style.color="var(--ey-dark)";}
   } else{
     document.getElementById("oU").textContent="\u2014";document.getElementById("oU").style.color="var(--ey-gray)";
-    document.getElementById("oU2").textContent="\u2014";document.getElementById("oU2").style.color="var(--ey-gray)";
-    document.getElementById("oUS").textContent="";
+    document.getElementById("oUStatus").textContent="";
   }
 
-  // Dashboard — Margin KPIs
-  // Target Margin = Fee × Target%
-  if(on&&fee>0){
-    var tgtMgn=fee*tgtP;
-    document.getElementById("kTM").textContent=fa(tgtMgn);
-    document.getElementById("kTMP").textContent=pc(tgtP);document.getElementById("kTMP").style.color="var(--ey-gray)";
-  } else {
-    document.getElementById("kTM").textContent="\u2014";
-    document.getElementById("kTMP").textContent="\u2014";document.getElementById("kTMP").style.color="var(--ey-gray)";
-  }
-
-  // Budget Margin (locked at Set Budget)
-  if(on&&S.lk){
-    document.getElementById("kBM").textContent=fa(S.bM);
-    document.getElementById("kBM").style.color=S.bM<0?"var(--ey-red)":"var(--ey-dark)";
-    document.getElementById("kBMP").textContent=pc(S.bMP);
-    document.getElementById("kBMP").style.color=S.bMP<0?"var(--ey-red)":S.bMP>=.3?"var(--ey-green)":"var(--ey-dark)";
-  } else if(on&&fee>0){
-    // Before Set Budget — show current planning margin as budget preview
-    document.getElementById("kBM").textContent=fa(mgn);
-    document.getElementById("kBM").style.color=mgn<0?"var(--ey-red)":"var(--ey-dark)";
-    document.getElementById("kBMP").textContent=pc(mp);
-    document.getElementById("kBMP").style.color=mp<0?"var(--ey-red)":mp>=.3?"var(--ey-green)":"var(--ey-dark)";
-  } else {
-    document.getElementById("kBM").textContent="\u2014";document.getElementById("kBM").style.color="var(--ey-dark)";
-    document.getElementById("kBMP").textContent="\u2014";document.getElementById("kBMP").style.color="var(--ey-gray)";
-  }
-
-  // Projected Margin (after ETC transfer, uses Budget+ETC hours)
-  var pmBox=document.getElementById("kPMBox");
-  if(on&&S.lk&&S.ed){
-    // ETC transferred — projected is different from budget
-    document.getElementById("kPM").textContent=fa(mgn);
-    document.getElementById("kPM").style.color=mgn<0?"var(--ey-red)":"var(--ey-dark)";
-    document.getElementById("kPMP").textContent=pc(mp);
-    document.getElementById("kPMP").style.color=mp<0?"var(--ey-red)":mp>=.3?"var(--ey-green)":"var(--ey-dark)";
-    pmBox.style.borderLeft="3px solid var(--ey-blue)";
-  } else if(on&&S.lk){
-    // Budget set but no ETC — projected = budget
-    document.getElementById("kPM").textContent=fa(S.bM);
-    document.getElementById("kPM").style.color=S.bM<0?"var(--ey-red)":"var(--ey-dark)";
-    document.getElementById("kPMP").textContent="same as budget";
-    document.getElementById("kPMP").style.color="var(--ey-gray)";
-    pmBox.style.borderLeft="";
-  } else {
-    document.getElementById("kPM").textContent="\u2014";document.getElementById("kPM").style.color="var(--ey-dark)";
-    document.getElementById("kPMP").textContent="\u2014";document.getElementById("kPMP").style.color="var(--ey-gray)";
-    pmBox.style.borderLeft="";
-  }
-
-  // Parameters row
+  // Dashboard — Parameters row
   document.getElementById("oN").textContent=on?fa0(nsr):"\u2014";
-  document.getElementById("oA").textContent=on?fa0(fee):"\u2014";
-  document.getElementById("oR").textContent=on?fa0(ter):"\u2014";
+  document.getElementById("oA").textContent=on?fa0(Math.round(dispANSR)):"\u2014";
+  var dispTER=dispANSR+bxp;
+  document.getElementById("oR").textContent=on?fa0(Math.round(dispTER)):"\u2014";
   document.getElementById("oE").textContent=on?pc(eaf):"\u2014";
 
-  // ETC variance row (Budget → Projected delta)
+  // ETC variance row
   if(S.lk&&S.ed){
     var mi=mgn-S.bM;document.getElementById("eMD").textContent=(mi>=0?"\u25b2 ":"\u25bc ")+fa(Math.abs(mi));document.getElementById("eMD").style.color=mi>=0?"var(--ey-green)":"var(--ey-red)";
     var ho=tH-bH;document.getElementById("eHD").textContent=(ho>=0?"+":"")+ho+" hrs";document.getElementById("eHD").style.color=ho>0?"var(--ey-red)":ho<0?"var(--ey-green)":"var(--ey-dark)";
@@ -648,6 +632,5 @@ function expH(){
 renderRates();render();updUI();
 </script>
 <script src="/scripts/nav.js"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"a3fc764f1e3f4a169787dacf3455b3f8","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
