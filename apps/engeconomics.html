@@ -93,6 +93,180 @@ input[type="file"]{display:none}
 .bk-blk{display:inline-block;width:100%;max-width:48px;height:22px;border-radius:4px;font-size:9px;font-weight:600;line-height:22px;text-align:center}
 .bk-leg{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ey-gray)}.bk-leg span{display:flex;align-items:center;gap:4px}
 .bk-dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+/* Tablet breakpoint */
+@media(max-width:768px){
+  .container{padding:18px 14px 48px}
+  .eng-bar{flex-wrap:wrap;gap:8px;padding:12px 14px}
+  .eng-bar input{flex:1 1 100%;font-size:14px}
+  .eng-bar span{order:-1}
+  .eng-bar .btn-p{flex:1 1 100%}
+}
+
+/* Phone breakpoint */
+@media(max-width:600px){
+  /* Header */
+  .header{padding:14px 16px}
+  .header h1{font-size:17px}
+
+  /* Container */
+  .container{padding:14px 10px 40px}
+
+  /* Engagement bar — full stack */
+  .eng-bar{flex-direction:column;gap:8px;padding:10px 12px}
+  .eng-bar input{width:100%;font-size:14px;padding:10px 12px}
+  .eng-bar .btn-p{width:100%;text-align:center;padding:12px 20px}
+  .eng-bar span{align-self:flex-start}
+
+  /* Cards */
+  .card{padding:14px 12px;border-radius:8px}
+  .card h2{font-size:14px}
+  .card .sub{font-size:11px;margin-bottom:12px}
+
+  /* Budget mode grid — tighter */
+  .c-bgt{grid-template-columns:62px 1fr 22px}
+
+  /* ETC mode — wrap into 2-row card layout per resource */
+  .c-etc{
+    grid-template-columns:1fr 1fr 1fr 1fr !important;
+    gap:4px 6px;
+    padding:8px 0;
+    border-bottom:1px solid var(--ey-border);
+    margin-bottom:2px;
+  }
+  /* Rank select spans full first row */
+  .c-etc > div:nth-child(1){grid-column:1 / -1}
+  /* X button floats top-right over rank row */
+  .c-etc > div:nth-child(6){
+    grid-column:4 / 5;
+    grid-row:1;
+    justify-self:end;
+    align-self:center;
+    position:relative;
+    z-index:1;
+  }
+  /* Number inputs (bgt, etc, total, actual) fill row 2 */
+  .c-etc > div:nth-child(2){grid-column:1;grid-row:2}
+  .c-etc > div:nth-child(3){grid-column:2;grid-row:2}
+  .c-etc > div:nth-child(4){grid-column:3;grid-row:2}
+  .c-etc > div:nth-child(5){grid-column:4;grid-row:2}
+
+  /* ETC header row — match stacked layout */
+  .rh.c-etc{
+    grid-template-columns:1fr 1fr 1fr 1fr !important;
+    gap:4px 6px;
+  }
+  .rh.c-etc > span:first-child{grid-column:1 / -1}
+  .rh.c-etc > span:last-child{display:none}
+
+  /* Total row — match */
+  .tot-row.c-etc{
+    grid-template-columns:1fr 1fr 1fr 1fr !important;
+    gap:4px 6px;
+  }
+  .tot-row.c-etc > div:first-child{grid-column:1 / -1}
+  .tot-row.c-etc > div:last-child{display:none}
+  .tot-row.c-bgt{grid-template-columns:62px 1fr 22px}
+
+  .rr select{font-size:12px;padding:7px 4px}
+  .rr input[type="number"]{font-size:12px;padding:7px 4px}
+
+  /* Stat rows — stack label above value */
+  .st{
+    flex-direction:column;
+    align-items:stretch;
+    gap:2px;
+    padding:8px 10px;
+  }
+  .st .sl{font-size:12px;width:100%}
+  .st .sv{
+    width:100%;
+    text-align:right;
+    font-size:14px;
+    padding:2px 0;
+  }
+  .ed-in{
+    width:100%;
+    text-align:right;
+    font-size:14px;
+    padding:6px 8px;
+    border:1.5px solid var(--ey-border);
+    border-radius:5px;
+  }
+
+  /* Inline margin % badges — shrink */
+  .st .sl span[style*="inline-flex"]{
+    margin-left:4px;
+    font-size:11px;
+  }
+
+  /* KPI grids — 2 cols on mobile */
+  div[style*="grid-template-columns:1fr 1fr 1fr 1fr"]{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  /* Booking grid — horizontal scroll */
+  .bk-grid{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .bk-hdr-row,.bk-data-row{min-width:520px}
+  .bk-wrap{margin-top:10px}
+  .bk-leg{flex-wrap:wrap;gap:8px;font-size:10px}
+
+  /* Tabs */
+  .tabs{flex-wrap:wrap;gap:4px}
+  .tab{padding:10px 10px;font-size:11px;flex:1 1 auto;min-width:0}
+
+  /* History section */
+  .hs h2{font-size:14px}
+  .hh{flex-direction:column;gap:8px;align-items:stretch}
+  .hh > div{display:flex;gap:6px;width:100%}
+  .hh > div .btn-o,
+  .hh > div .btn-d{flex:1;text-align:center;padding:10px 12px}
+  .ht{font-size:11px}
+  .ht th{padding:6px 6px;font-size:10px;white-space:nowrap}
+  .ht td{padding:6px 6px;font-size:11px}
+
+  /* Glossary */
+  .lg{padding:10px 12px;font-size:11px;line-height:1.6}
+  .rate-bar{flex-direction:column;gap:6px}
+  .rate-bar .btn-o{width:100%;text-align:center;font-size:12px;padding:10px 14px}
+
+  /* Auto-allocate + add resource buttons */
+  .add-btn{font-size:12px;padding:10px 0}
+
+  /* Performance section */
+  .kpi .kl{font-size:10px}
+  .kpi .kv{font-size:12px}
+  .kpi.metric .kv{font-size:17px}
+  .kpi.metric{padding:10px 8px}
+
+  /* Buttons — bigger touch targets */
+  .btn-o,.btn-d{padding:10px 16px;font-size:13px}
+}
+
+/* Small phone */
+@media(max-width:380px){
+  .header{padding:12px 12px}
+  .header h1{font-size:14px}
+  .header .ver{font-size:10px}
+  body{font-size:13px}
+  .container{padding:10px 6px 36px}
+  .card{padding:10px 8px}
+  .eng-bar{padding:8px}
+
+  .c-bgt{grid-template-columns:56px 1fr 20px}
+  .rr select{font-size:10px;padding:6px 2px}
+  .rr input[type="number"]{font-size:10px;padding:6px 3px}
+  .tot-cell{font-size:10px;padding:6px 4px}
+
+  .st .sl{font-size:11px}
+  .st .sv{font-size:12px}
+  .ed-in{font-size:12px;padding:5px 6px}
+
+  .tab{font-size:10px;padding:8px 6px}
+  .kpi.metric .kv{font-size:15px}
+}
 </style>
 </head>
 <body>
