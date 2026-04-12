@@ -1,14 +1,15 @@
 /**
  * Shared navigation bar for Finance Calculators
- * Include via <script src="/scripts/nav.js"></script> at end of <body>
- * Injects a sticky top nav with home link + app title
+ * Include via <script src="../scripts/nav.js"></script> at end of <body>
  */
 (function () {
   var title = document.title || "Calculator";
+  // Detect base path for GitHub Pages subpath support
+  var base = location.pathname.replace(/\/apps\/.*$/, "/");
   var nav = document.createElement("div");
   nav.id = "calc-nav";
   nav.innerHTML =
-    '<a href="/" class="cn-home">\u2190 All Calculators</a>' +
+    '<a href="' + base + '" class="cn-home">\u2190 All Calculators</a>' +
     '<span class="cn-title">' + title + "</span>";
 
   var style = document.createElement("style");
