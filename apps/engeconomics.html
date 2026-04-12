@@ -528,6 +528,5 @@ function rH(){var c=document.getElementById("hC");if(!HL.length){c.innerHTML='<d
 function expH(){if(!HL.length)return;var rows=["Date,Engagement,Status,ETC Count,Last ETC,Actual Hrs,Proj Hrs,Fee,Cost,Margin,Margin%,NUI"];HL.forEach(function(s){rows.push(['"'+s.d+'"','"'+s.nm.replace(/"/g,'""')+'"',s.tag,s.etcCount,'"'+(s.etcDate||"")+'"',s.aH,s.h,s.fee.toFixed(2),s.cost.toFixed(2),s.mgn.toFixed(2),(s.mp*100).toFixed(2)+"%",s.nui.toFixed(2)].join(","))});var b=new Blob(["\uFEFF"+rows.join("\r\n")],{type:"text/csv;charset=utf-8;"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="engagement_economics.csv";a.click()}
 renderRates();render();updUI();
 </script>
-<script src="../scripts/nav.js"></script>
 </body>
 </html>
