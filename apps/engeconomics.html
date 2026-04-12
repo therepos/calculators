@@ -32,15 +32,16 @@ input[type="number"]{-moz-appearance:textfield}input[type="number"]::-webkit-out
 .rh{display:grid;gap:6px;margin-bottom:4px;padding:0 0 6px 0;border-bottom:1px solid var(--ey-border)}
 .rh span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .rr{display:grid;gap:6px;align-items:center;margin-bottom:5px}
-.c-bgt{grid-template-columns:80px 1fr 24px}
 .c-etc{grid-template-columns:80px 1fr 1fr 1fr 1fr 22px}
-@media(max-width:680px){.c-bgt{grid-template-columns:70px 1fr 22px}.c-etc{grid-template-columns:70px 1fr 1fr 1fr 1fr 20px}}
+@media(max-width:680px){.c-etc{grid-template-columns:70px 1fr 1fr 1fr 1fr 20px}}
 .rr select{width:100%;border:1.5px solid var(--ey-border);border-radius:5px;padding:7px 4px;font-size:12px;color:var(--ey-dark);outline:none;font-family:var(--sans);background:#fff;cursor:pointer;appearance:auto}.rr select:focus{border-color:var(--ey-yellow)}
 .rr input[type="number"]{width:100%;border:1.5px solid var(--ey-border);border-radius:5px;padding:7px 6px;font-size:12px;color:var(--ey-dark);outline:none;font-family:var(--mono);text-align:right}.rr input:focus{border-color:var(--ey-yellow)}
 input.lk{background:var(--ey-light-bg);color:var(--ey-gray);pointer-events:none;border-color:transparent}
 input.etc-i{background:var(--sec-amber-bg);border-color:var(--sec-amber-bdr);color:var(--sec-amber-val)}input.etc-i:focus{border-color:var(--ey-yellow)}
 input.etc-d{background:var(--sec-amber-bg);color:var(--sec-amber-val);pointer-events:none;border-color:transparent;opacity:.6}
 input.act-i{background:var(--sec-green-bg);border-color:var(--sec-green-bdr);color:var(--sec-green-val)}input.act-i:focus{border-color:var(--ey-green)}
+input.dis{background:var(--ey-light-bg);color:var(--ey-border);pointer-events:none;border-color:transparent;opacity:.45}
+.dis-cell{background:var(--ey-light-bg)!important;color:var(--ey-border)!important;opacity:.45}
 input.tot-i{background:var(--sec-blue-bg);color:var(--sec-blue-val);pointer-events:none;border-color:transparent;font-weight:600}
 .x-btn{background:none;border:none;cursor:pointer;color:var(--ey-red);font-size:15px;font-weight:700;opacity:.4}.x-btn:hover{opacity:1}
 .add-btn{background:none;border:1.5px dashed var(--ey-border);border-radius:6px;padding:8px 0;width:100%;cursor:pointer;color:var(--ey-gray);font-size:12px;font-weight:600;margin-top:6px;font-family:var(--sans)}.add-btn:hover{border-color:var(--ey-yellow);color:var(--ey-dark)}
@@ -126,10 +127,7 @@ input[type="file"]{display:none}
   .card h2{font-size:14px}
   .card .sub{font-size:11px;margin-bottom:12px}
 
-  /* Budget mode grid — tighter */
-  .c-bgt{grid-template-columns:62px 1fr 22px}
-
-  /* ETC mode — wrap into 2-row card layout per resource */
+  /* Resource grid — always c-etc now, card layout per resource on mobile */
   .c-etc{
     grid-template-columns:1fr 1fr 1fr 1fr !important;
     gap:4px 6px;
@@ -154,7 +152,7 @@ input[type="file"]{display:none}
   .c-etc > div:nth-child(4){grid-column:3;grid-row:2}
   .c-etc > div:nth-child(5){grid-column:4;grid-row:2}
 
-  /* ETC header row — match stacked layout */
+  /* Header row — match stacked layout */
   .rh.c-etc{
     grid-template-columns:1fr 1fr 1fr 1fr !important;
     gap:4px 6px;
@@ -169,7 +167,6 @@ input[type="file"]{display:none}
   }
   .tot-row.c-etc > div:first-child{grid-column:1 / -1}
   .tot-row.c-etc > div:last-child{display:none}
-  .tot-row.c-bgt{grid-template-columns:62px 1fr 22px}
 
   .rr select{font-size:12px;padding:7px 4px}
   .rr input[type="number"]{font-size:12px;padding:7px 4px}
@@ -256,7 +253,6 @@ input[type="file"]{display:none}
   .card{padding:10px 8px}
   .eng-bar{padding:8px}
 
-  .c-bgt{grid-template-columns:56px 1fr 20px}
   .rr select{font-size:10px;padding:6px 2px}
   .rr input[type="number"]{font-size:10px;padding:6px 3px}
   .tot-cell{font-size:10px;padding:6px 4px}
@@ -454,23 +450,34 @@ function dlTemplate(){var rows=["Rank,NSR_per_hr,Cost_per_hr,Mix_pct"];KN.forEac
 function importRates(input){if(!input.files||!input.files[0])return;var reader=new FileReader();reader.onload=function(e){var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim()});if(lines.length<2){alert("CSV needs header + data.");return}var newK={},newKN=[];for(var i=1;i<lines.length;i++){var parts=[],cur="",inQ=false;for(var j=0;j<lines[i].length;j++){var ch=lines[i][j];if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){parts.push(cur.trim());cur=""}else cur+=ch}parts.push(cur.trim());if(parts.length<3)continue;var rank=parts[0],nsr=Number(parts[1]),cost=Number(parts[2]),wt=parts.length>=4?Number(parts[3]):0;if(!rank||isNaN(nsr)||isNaN(cost))continue;if(isNaN(wt))wt=0;newK[rank]={n:nsr,c:cost,w:wt};newKN.push(rank)}if(!newKN.length){alert("No valid rates found.");return}K=newK;KN=newKN;R=[{r:KN[0],b:0,e:0,a:0}];if(KN.length>1)R.push({r:KN[Math.min(2,KN.length-1)],b:0,e:0,a:0});if(KN.length>2)R.push({r:KN[Math.min(3,KN.length-1)],b:0,e:0,a:0});S={lk:false,bN:0,bE:0,bL:0,bT:0,bC:0,bM:0,bMP:0,ed:false,etcOpen:false};document.getElementById("addB").style.display="";document.getElementById("autoB").style.display="";renderRates();updUI();render();alert("Rates updated: "+newKN.length+" ranks loaded.")};reader.readAsText(input.files[0]);input.value=""}
 function render(){
   var h=document.getElementById("hdr"),c=document.getElementById("rows");
-  if(S.lk){h.innerHTML='<div class="rh c-etc"><span style="text-align:left;color:var(--ey-gray)">Rank</span><span style="text-align:right;color:var(--ey-gray)">Bgt</span><span style="text-align:right;color:var(--sec-amber-val)">ETC(+)</span><span style="text-align:right;color:var(--sec-blue-val)">Total</span><span style="text-align:right;color:var(--sec-green-val)">Actual</span><span></span></div>'}
-  else{h.innerHTML='<div class="rh c-bgt"><span style="text-align:left;color:var(--ey-gray)">Rank</span><span style="text-align:right;color:var(--ey-gray)">Hours</span><span></span></div>'}
+  h.innerHTML='<div class="rh c-etc"><span style="text-align:left;color:var(--ey-gray)">Rank</span><span style="text-align:right;color:var(--ey-gray)">BGT</span><span style="text-align:right;color:'+(S.lk?'var(--sec-amber-val)':'var(--ey-border)')+'">ETC(+)</span><span style="text-align:right;color:'+(S.lk?'var(--sec-blue-val)':'var(--ey-border)')+'">Total</span><span style="text-align:right;color:'+(S.lk?'var(--sec-green-val)':'var(--ey-border)')+'">Actual</span><span></span></div>';
   c.innerHTML="";
   R.forEach(function(r,i){
-    var row=document.createElement("div");row.className=S.lk?"rr c-etc":"rr c-bgt";
+    var row=document.createElement("div");row.className="rr c-etc";
     var opts='<option value="">\u2014\u2014</option>';KN.forEach(function(n){opts+='<option value="'+n+'"'+(r.r===n?' selected':'')+'>'+(KA[n]||n)+'</option>'});
     var sel='<div><select onchange="R['+i+'].r=this.value;render()"'+(S.lk?' disabled style="opacity:.6;cursor:default"':'')+'>'+opts+'</select></div>';
     var rm='<div>'+(R.length>1&&!S.lk?'<button class="x-btn" onclick="R.splice('+i+',1);render()">\u00d7</button>':'<div style="width:18px"></div>')+'</div>';
-    if(S.lk){row.innerHTML=sel+'<div><input type="number" class="lk" value="'+r.b+'" tabindex="-1"></div><div><input type="number" class="'+(S.etcOpen?'etc-i':'etc-d')+'" min="0" value="'+r.e+'"'+(S.etcOpen?' oninput="R['+i+'].e=Number(this.value)||0;onEE()"':' tabindex="-1"')+'></div><div><input type="number" class="tot-i" value="'+(S.etcOpen?(r.b+r.e):committedTot(r))+'" tabindex="-1"></div><div><input type="number" class="act-i" min="0" value="'+r.a+'" oninput="R['+i+'].a=Number(this.value)||0;calc()"></div>'+rm}
-    else{row.innerHTML=sel+'<div><input type="number" min="0" value="'+r.b+'" oninput="R['+i+'].b=Number(this.value)||0;R['+i+'].e=0;R['+i+'].a=0;calc()"></div>'+rm}
+    var bgtInput;
+    if(S.lk){bgtInput='<div><input type="number" class="lk" value="'+r.b+'" tabindex="-1"></div>'}
+    else{bgtInput='<div><input type="number" min="0" value="'+r.b+'" oninput="R['+i+'].b=Number(this.value)||0;R['+i+'].e=0;R['+i+'].a=0;calc()"></div>'}
+    var etcInput,totInput,actInput;
+    if(S.lk){
+      etcInput='<div><input type="number" class="'+(S.etcOpen?'etc-i':'etc-d')+'" min="0" value="'+r.e+'"'+(S.etcOpen?' oninput="R['+i+'].e=Number(this.value)||0;onEE()"':' tabindex="-1"')+'></div>';
+      totInput='<div><input type="number" class="tot-i" value="'+(S.etcOpen?(r.b+r.e):committedTot(r))+'" tabindex="-1"></div>';
+      actInput='<div><input type="number" class="act-i" min="0" value="'+r.a+'" oninput="R['+i+'].a=Number(this.value)||0;calc()"></div>';
+    }else{
+      etcInput='<div><input type="number" class="dis" value="0" tabindex="-1" disabled></div>';
+      totInput='<div><input type="number" class="dis" value="0" tabindex="-1" disabled></div>';
+      actInput='<div><input type="number" class="dis" value="0" tabindex="-1" disabled></div>';
+    }
+    row.innerHTML=sel+bgtInput+etcInput+totInput+actInput+rm;
     c.appendChild(row)});
   renderTotals();calc()}
 function renderTotals(){
   var el=document.getElementById("totRow");
   var bH=R.reduce(function(s,r){return s+r.b},0),eH=R.reduce(function(s,r){return s+r.e},0),tH=R.reduce(function(s,r){return s+committedTot(r)},0),aH=R.reduce(function(s,r){return s+r.a},0);
   if(S.lk){el.innerHTML='<div class="tot-row c-etc"><div><span style="font-size:12px;font-weight:600">Total <small style="color:var(--ey-gray);font-weight:400;font-size:11px">(hrs)</small></span></div><div class="tot-cell" style="background:var(--ey-light-bg);color:var(--ey-gray)">'+bH+'</div><div class="tot-cell" style="background:var(--sec-amber-bg);color:var(--sec-amber-val)">'+eH+'</div><div class="tot-cell" style="background:var(--sec-blue-bg);color:var(--sec-blue-val)">'+tH+'</div><div class="tot-cell" style="background:var(--sec-green-bg);color:var(--sec-green-val)">'+aH+'</div><div></div></div>'}
-  else{el.innerHTML='<div class="tot-row c-bgt"><div><span style="font-size:12px;font-weight:600">Total <small style="color:var(--ey-gray);font-weight:400;font-size:11px">(hrs)</small></span></div><div class="tot-cell" style="background:var(--ey-light-bg)">'+bH+'</div><div></div></div>'}}
+  else{el.innerHTML='<div class="tot-row c-etc"><div><span style="font-size:12px;font-weight:600">Total <small style="color:var(--ey-gray);font-weight:400;font-size:11px">(hrs)</small></span></div><div class="tot-cell" style="background:var(--ey-light-bg)">'+bH+'</div><div class="tot-cell dis-cell">0</div><div class="tot-cell dis-cell">0</div><div class="tot-cell dis-cell">0</div><div></div></div>'}}
 function addR(){if(S.lk)return;R.push({r:KN[0],b:0,e:0,a:0});render()}
 function updUI(){var tB=document.getElementById("tB"),tE=document.getElementById("tE"),bg=document.getElementById("badge");if(!S.lk){tB.className="tab a1";tE.className="tab off";tE.textContent="Run ETC";tE.onclick=doEtc;bg.innerHTML='<span class="bg bg1">Budget</span>'}else if(S.etcOpen){tB.className="tab off";tE.className="tab rdy";tE.textContent="Transfer ETC";tE.onclick=doTransferEtc;bg.innerHTML='<span class="bg bg1">Budget Set</span>'}else if(S.ed){tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;bg.innerHTML='<span class="bg bg2">ETC Done</span>'}else{tB.className="tab off";tE.className="tab rdy";tE.textContent="Run ETC";tE.onclick=doEtc;bg.innerHTML='<span class="bg bg1">Budget Set</span>'}}
 function doBgt(){if(S.lk)return;var b=sm(function(r){return r.b}),tp=gv("tpI")/100,fee=gv("fee"),exp=gv("bxp");S.lk=true;S.ed=false;S.bN=b.n;S.bE=(b.n>0&&fee>0)?(fee/b.n)-1:0;S.bL=b.c;S.bT=b.c*tp;S.bC=b.c+S.bT+exp;S.bM=fee-S.bC;S.bMP=fee>0?S.bM/fee:0;R.forEach(function(r){r.e=0;r.a=r.b});document.getElementById("addB").style.display="none";document.getElementById("autoB").style.display="none";etcLog=[];updUI();render()}
