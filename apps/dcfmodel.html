@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCF Modeler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0f14;
+  --surface: #141820;
+  --surface2: #1a1f2a;
+  --border: #252b38;
+  --text: #e8eaf0;
+  --text-muted: #7a8299;
+  --accent: #4fd1a5;
+  --accent-dim: rgba(79,209,165,0.12);
+  --accent2: #5b8cf5;
+  --accent2-dim: rgba(91,140,245,0.1);
+  --red: #f07068;
+  --red-dim: rgba(240,112,104,0.1);
+  --gold: #e8c468;
+  --gold-dim: rgba(232,196,104,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.grain {
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+header {
+  padding: 48px 40px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeUp 0.6s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.4rem;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 6px;
+  font-weight: 300;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Steps nav */
+.steps-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  animation: fadeUp 0.6s ease-out 0.1s both;
+}
+
+.step-btn {
+  flex: 1;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.25s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-btn .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+.step-btn:hover { color: var(--text); background: var(--surface2); }
+.step-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+/* Panels */
+.panel {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  animation: fadeUp 0.4s ease-out;
+}
+.panel.active { display: block; }
+
+.panel h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.panel .subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* Form grids */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full { grid-column: 1 / -1; }
+
+label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input[type="number"], input[type="text"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus { border-color: var(--accent); }
+
+/* Forecast table */
+.forecast-table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  text-align: right;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+th:first-child { text-align: left; }
+
+td {
+  padding: 10px 14px;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+}
+td:first-child {
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+tr:hover td { background: rgba(255,255,255,0.015); }
+tr.highlight td { color: var(--accent); font-weight: 600; }
+tr.highlight-gold td { color: var(--gold); font-weight: 600; }
+tr.section-head td {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface2);
+  border-top: 2px solid var(--border);
+}
+
+/* Result cards */
+.results-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.result-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.result-card:hover { border-color: var(--accent); }
+
+.result-card .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.result-card .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.result-card .value.gold { color: var(--gold); }
+.result-card .value.blue { color: var(--accent2); }
+
+.result-card.verdict {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.result-card.verdict .value { font-size: 1.3rem; }
+.result-card.verdict.sell { border-color: var(--red); background: var(--red-dim); }
+.result-card.verdict.sell .value { color: var(--red); }
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--accent), #3ab891);
+  color: var(--bg);
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+button.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,209,165,0.25); }
+
+button.secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button.secondary:hover { background: var(--border); }
+
+/* Info box */
+.info-box {
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+.info-box code {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(0,0,0,0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.formula-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 14px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--gold);
+  letter-spacing: 0.3px;
+}
+
+/* Sensitivity table */
+.sensitivity-grid {
+  display: grid;
+  grid-template-columns: auto repeat(5, 1fr);
+  gap: 2px;
+  margin-top: 16px;
+  font-size: 0.78rem;
+}
+
+.sens-cell {
+  padding: 10px 8px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  border-radius: 4px;
+}
+.sens-header {
+  background: var(--surface2);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+.sens-cell.buy { color: var(--accent); }
+.sens-cell.sell { color: var(--red); }
+.sens-cell.center { background: var(--accent-dim); font-weight: 600; }
+
+/* Footnotes */
+.footnotes {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footnote {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  border-left: 3px solid var(--border);
+  transition: border-color 0.2s;
+}
+.footnote:hover { border-color: var(--accent); color: var(--text); }
+
+.fn-marker {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--accent2);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 8px;
+}
+
+/* Guide page */
+.guide-section {
+  margin-bottom: 32px;
+}
+
+.guide-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-text {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.guide-text-sm {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+.guide-step:hover { border-color: var(--accent); }
+
+.guide-step-num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.guide-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.guide-compare-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+.guide-compare-card:hover { border-color: var(--accent); }
+.guide-compare-card.gordon { border-top: 3px solid var(--accent2); }
+.guide-compare-card.exit { border-top: 3px solid var(--gold); }
+
+.guide-compare-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 8px;
+}
+
+.guide-pitfalls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pitfall {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--red-dim);
+  border-radius: 10px;
+  border: 1px solid rgba(240,112,104,0.15);
+}
+
+.pitfall-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.formula-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.formula-ref-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--bg);
+}
+.formula-ref-row:nth-child(even) { background: var(--surface2); }
+
+.formula-ref-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.formula-ref-eq {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--gold);
+}
+
+@media (max-width: 700px) {
+  header { padding: 28px 20px 20px; }
+  header h1 { font-size: 1.6rem; }
+  .app { padding: 0 16px 60px; }
+  .panel { padding: 20px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .steps-nav { flex-wrap: wrap; }
+  .step-btn { font-size: 0.68rem; padding: 8px 4px; }
+  .guide-comparison { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <h1>Discounted Cash Flow Modeler</h1>
+  <p>Forecast financials, discount cash flows, and find fair value per share</p>
+</header>
+
+<div class="app">
+  <nav class="steps-nav">
+    <button class="step-btn active" onclick="goStep(0)"><span class="num">01</span>Historicals</button>
+    <button class="step-btn" onclick="goStep(1)"><span class="num">02</span>Assumptions</button>
+    <button class="step-btn" onclick="goStep(2)"><span class="num">03</span>Forecast</button>
+    <button class="step-btn" onclick="goStep(3)"><span class="num">04</span>FCF & DCF</button>
+    <button class="step-btn" onclick="goStep(4)"><span class="num">05</span>Valuation</button>
+    <button class="step-btn" onclick="goStep(5)"><span class="num">06</span>Sensitivity</button>
+    <button class="step-btn" onclick="goStep(6)"><span class="num">📖</span>Guide</button>
+  </nav>
+
+  <!-- Step 0: Historical Financials -->
+  <div class="panel active" id="p0">
+    <h2>Historical Financials</h2>
+    <p class="subtitle">Enter the company's most recent year financials. These serve as the base year for forecasting.</p>
+    <div class="info-box">
+      DCF valuation begins with understanding a company's current financial position — revenue, expenses, and capital structure.
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Revenue ($)</label>
+        <input type="number" id="h_revenue" value="10000">
+      </div>
+      <div class="form-group">
+        <label>COGS ($)</label>
+        <input type="number" id="h_cogs" value="4000">
+      </div>
+      <div class="form-group">
+        <label>SG&A ($)</label>
+        <input type="number" id="h_sga" value="1500">
+      </div>
+      <div class="form-group">
+        <label>Depreciation ($)</label>
+        <input type="number" id="h_dep" value="500">
+      </div>
+      <div class="form-group">
+        <label>Amortization ($)</label>
+        <input type="number" id="h_amort" value="200">
+      </div>
+      <div class="form-group">
+        <label>Tax Rate (%)</label>
+        <input type="number" id="h_tax" value="21" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Net Capital Expenditure ($)</label>
+        <input type="number" id="h_capex" value="800">
+      </div>
+      <div class="form-group">
+        <label>Change in Working Capital ($)</label>
+        <input type="number" id="h_wc" value="200">
+      </div>
+    </div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">Why historicals?</span> Past financials reveal trends in revenue growth, margins, and capital intensity. They're the empirical foundation for every assumption you'll make in the next steps.</div>
+      <div class="footnote"><span class="fn-marker">D&A vs. CapEx</span> Depreciation & Amortization is a non-cash expense that reduces reported earnings but doesn't consume cash — it gets added back when computing FCF. Capital Expenditure is actual cash spent on assets, so it gets subtracted.</div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="goStep(1)">Set Assumptions →</button>
+    </div>
+  </div>
+
+  <!-- Step 1: Growth Assumptions -->
+  <div class="panel" id="p1">
+    <h2>Growth Assumptions</h2>
+    <p class="subtitle">Set annual growth rates and margins to project the next 5 years. These drive the entire forecast.</p>
+    <div class="info-box">
+      In DCF modeling, we typically use <code>Revenue Growth</code> rates to forecast future revenue, then apply margin assumptions to derive expenses and cash flows.
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Revenue Growth Rates by Year (%)</label>
+      </div>
+      <div class="form-group"><label>Year 1</label><input type="number" id="g1" value="8" step="0.1"></div>
+      <div class="form-group"><label>Year 2</label><input type="number" id="g2" value="7" step="0.1"></div>
+      <div class="form-group"><label>Year 3</label><input type="number" id="g3" value="6" step="0.1"></div>
+      <div class="form-group"><label>Year 4</label><input type="number" id="g4" value="5" step="0.1"></div>
+      <div class="form-group"><label>Year 5</label><input type="number" id="g5" value="4" step="0.1"></div>
+      <div class="form-group">
+        <label>COGS as % of Revenue</label>
+        <input type="number" id="a_cogs_pct" value="40" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>SG&A as % of Revenue</label>
+        <input type="number" id="a_sga_pct" value="15" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>D&A as % of Revenue</label>
+        <input type="number" id="a_da_pct" value="7" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>CapEx as % of Revenue</label>
+        <input type="number" id="a_capex_pct" value="8" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>ΔWC as % of Revenue</label>
+        <input type="number" id="a_wc_pct" value="2" step="0.1">
+      </div>
+    </div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">Revenue growth is king</span> In DCF modeling, revenue growth is the primary driver of the entire forecast. Expenses, CapEx, and working capital are then modeled as percentages of revenue — this is called margin-based forecasting.</div>
+      <div class="footnote"><span class="fn-marker">Tapering growth</span> Growth rates typically decline over the forecast period. A company growing at 15% today is unlikely to sustain that for 5 years. Tapering from 8% → 4% (as defaulted here) reflects a maturing business.</div>
+      <div class="footnote"><span class="fn-marker">Working capital (ΔWC)</span> As revenue grows, companies need more cash tied up in inventory and receivables. The change in working capital captures this cash drain — it's often overlooked but materially affects FCF.</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="goStep(0)">← Back</button>
+      <button class="primary" onclick="buildForecast(); goStep(2)">Build Forecast →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Forecast Table -->
+  <div class="panel" id="p2">
+    <h2>Five-Year Forecast</h2>
+    <p class="subtitle">Projected income statement items based on your growth assumptions.</p>
+    <div class="forecast-table-wrap">
+      <table id="forecastTable"></table>
+    </div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">Reading the table</span> Revenue flows down: subtract COGS for Gross Profit, subtract SG&A for EBITDA, subtract D&A for EBIT (operating income). EBIT is the key input for the FCF formula in the next step.</div>
+      <div class="footnote"><span class="fn-marker">EBITDA vs. EBIT</span> EBITDA = Earnings Before Interest, Taxes, Depreciation & Amortization — a proxy for operating cash generation. EBIT = EBITDA minus D&A — the actual operating profit. The Exit Multiple method uses EBITDA; the FCF formula starts from EBIT.</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="goStep(1)">← Assumptions</button>
+      <button class="primary" onclick="goStep(3)">Calculate FCF →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: FCF & DCF -->
+  <div class="panel" id="p3">
+    <h2>Free Cash Flow & Discounting</h2>
+    <p class="subtitle">Calculate unlevered free cash flows and discount them to present value.</p>
+    <div class="info-box">
+      <strong>Free Cash Flow (FCF)</strong> = EBIT × (1 − Tax Rate) + D&A − Net CapEx − ΔWorking Capital
+    </div>
+    <div class="formula-box">FCF = EBIT × (1 − t) + D&A − CapEx − ΔWC</div>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label>WACC (%)</label>
+        <input type="number" id="wacc" value="10" step="0.1" onchange="recalcDCF()">
+      </div>
+      <div class="form-group">
+        <label>Terminal Growth Rate (%)</label>
+        <input type="number" id="tgr" value="2.5" step="0.1" onchange="recalcDCF()">
+      </div>
+      <div class="form-group">
+        <label>Exit EV/EBITDA Multiple</label>
+        <input type="number" id="exit_multiple" value="12" step="0.5" onchange="recalcDCF()">
+      </div>
+      <div class="form-group">
+        <label>Terminal Value Method</label>
+        <select id="tv_method" onchange="recalcDCF()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'DM Sans';font-size:0.88rem;outline:none;">
+          <option value="gordon">Gordon Growth Model</option>
+          <option value="exit">Exit Multiple</option>
+        </select>
+      </div>
+    </div>
+    <div class="forecast-table-wrap">
+      <table id="fcfTable"></table>
+    </div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">WACC explained</span> Weighted Average Cost of Capital blends the cost of equity (what shareholders demand) and cost of debt (interest rate on borrowings), weighted by the company's capital structure. It represents the minimum return the company must earn to satisfy all investors.</div>
+      <div class="footnote"><span class="fn-marker">Terminal growth rate</span> Used in the Gordon Growth Model. It should approximate long-term nominal GDP growth (typically 2–3%). Setting it higher implies the company will eventually outgrow the entire economy — which is impossible indefinitely.</div>
+      <div class="footnote"><span class="fn-marker">Why discount?</span> $100 received in 5 years is worth less than $100 today because of the time value of money — you could invest today's $100 and earn returns. The discount factor converts future cash flows to their present-day equivalent.</div>
+      <div class="footnote"><span class="fn-marker">Gordon vs. Exit — quick rule</span> Use <strong>Gordon Growth</strong> for stable, mature companies (utilities, staples). Use <strong>Exit Multiple</strong> for growth companies or sectors with active M&A. See the Guide tab for a deep comparison.</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="goStep(2)">← Forecast</button>
+      <button class="primary" onclick="goStep(4)">Valuation →</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Valuation -->
+  <div class="panel" id="p4">
+    <h2>Valuation Summary</h2>
+    <p class="subtitle">From enterprise value to equity value to fair value per share.</p>
+    <div class="info-box">
+      <strong>Enterprise Value</strong> = NPV of FCFs + PV of Terminal Value<br>
+      <strong>Equity Value</strong> = Enterprise Value + Cash − Debt<br>
+      <strong>Fair Value/Share</strong> = Equity Value ÷ Shares Outstanding
+    </div>
+    <div class="form-grid" style="margin-bottom:20px;">
+      <div class="form-group">
+        <label>Cash & Equivalents ($)</label>
+        <input type="number" id="v_cash" value="2000" onchange="recalcValuation()">
+      </div>
+      <div class="form-group">
+        <label>Total Debt ($)</label>
+        <input type="number" id="v_debt" value="3000" onchange="recalcValuation()">
+      </div>
+      <div class="form-group">
+        <label>Shares Outstanding</label>
+        <input type="number" id="v_shares" value="1000" onchange="recalcValuation()">
+      </div>
+      <div class="form-group">
+        <label>Current Market Price ($)</label>
+        <input type="number" id="v_market" value="25" step="0.01" onchange="recalcValuation()">
+      </div>
+    </div>
+    <div class="results-row" id="valuationResults"></div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">Enterprise vs. Equity Value</span> Enterprise Value is the total value of the business (debt + equity holders). To get Equity Value (what shareholders own), add cash (an asset shareholders can claim) and subtract debt (a prior claim on the business).</div>
+      <div class="footnote"><span class="fn-marker">The recommendation</span> If Fair Value/Share > Market Price → BUY (stock is undervalued). If Fair Value/Share < Market Price → SELL (stock is overvalued). This assumes your model assumptions are correct — always sanity-check with sensitivity analysis.</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="goStep(3)">← FCF</button>
+      <button class="primary" onclick="buildSensitivity(); goStep(5)">Sensitivity →</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Sensitivity -->
+  <div class="panel" id="p5">
+    <h2>Sensitivity Analysis</h2>
+    <p class="subtitle">See how fair value changes with different WACC and terminal growth assumptions.</p>
+    <div class="info-box">
+      A sensitivity table stress-tests your valuation. Green cells indicate the stock is undervalued (BUY), red cells indicate overvalued (SELL) relative to the current market price.
+    </div>
+    <div id="sensitivityGrid"></div>
+    <div class="footnotes">
+      <div class="footnote"><span class="fn-marker">Why sensitivity matters</span> DCF valuations are highly sensitive to WACC and terminal growth rate. A 1% change in WACC can swing fair value by 20–40%. Analysts always present a range rather than a single point estimate. If most cells are green (BUY), you have a stronger conviction. If it's mixed, the stock is closer to fairly valued.</div>
+      <div class="footnote"><span class="fn-marker">Reading the table</span> The center cell (highlighted) is your base case. Move right to see what happens with higher terminal growth; move down for higher WACC (more risk). A "—" means the Gordon Growth formula breaks down when WACC ≤ terminal growth rate.</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" onclick="goStep(4)">← Valuation</button>
+    </div>
+  </div>
+
+  <!-- Step 6: Guide -->
+  <div class="panel" id="p6">
+    <h2>DCF Guide & Reference</h2>
+    <p class="subtitle">Everything you need to understand the discounted cash flow valuation method.</p>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">What is DCF Valuation?</h3>
+      <p class="guide-text">Discounted Cash Flow (DCF) is an intrinsic valuation method. Instead of comparing a company to peers (relative valuation), DCF estimates what a business is worth based on the cash it will generate in the future, discounted back to today's dollars. The core idea: <em>a dollar tomorrow is worth less than a dollar today.</em></p>
+    </div>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">The DCF Process (6 Steps)</h3>
+      <div class="guide-steps">
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div>
+            <strong>Gather Historical Financials</strong>
+            <p class="guide-text-sm">Collect 3–5 years of income statement data: revenue, COGS, SG&A, D&A. These establish the baseline trends you'll project forward.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div>
+            <strong>Set Growth Assumptions</strong>
+            <p class="guide-text-sm">Revenue growth is the primary driver. Expenses are typically modeled as a percentage of revenue (margin-based forecasting). Growth rates should taper in later years to reflect market maturity.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div>
+            <strong>Build a 5-Year Forecast</strong>
+            <p class="guide-text-sm">Project revenue, then derive COGS, SG&A, D&A, and EBIT for each year. This gives you the operating profit trajectory needed for FCF calculation.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div>
+            <strong>Calculate Free Cash Flows</strong>
+            <p class="guide-text-sm">FCF = EBIT × (1 − Tax Rate) + D&A − CapEx − ΔWC. This is the cash available to all capital providers (debt + equity) after reinvestment.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div>
+            <strong>Calculate Terminal Value & Discount</strong>
+            <p class="guide-text-sm">Estimate what the business is worth beyond Year 5 (terminal value), then discount all cash flows — including the terminal value — back to today using WACC.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="guide-step-num">6</div>
+          <div>
+            <strong>Derive Fair Value Per Share</strong>
+            <p class="guide-text-sm">Enterprise Value = NPV of FCFs + PV of Terminal Value. Then: Equity Value = EV + Cash − Debt. Finally: Fair Value/Share = Equity Value ÷ Shares Outstanding.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">Terminal Value: Gordon Growth vs. Exit Multiple</h3>
+      <div class="guide-comparison">
+        <div class="guide-compare-card gordon">
+          <div class="guide-compare-title">Gordon Growth Model</div>
+          <div class="formula-box" style="margin:12px 0;">TV = FCF₅ × (1 + g) / (WACC − g)</div>
+          <p class="guide-text-sm"><strong>When to use:</strong> Mature, stable companies with predictable growth — utilities, consumer staples, large-cap industrials. The company should be growing at or near the economy's long-term growth rate.</p>
+          <p class="guide-text-sm"><strong>Key constraint:</strong> The terminal growth rate (g) must be less than WACC, and typically should not exceed long-term GDP growth (2–3%). If g ≥ WACC, the formula produces infinity — which is nonsensical.</p>
+          <p class="guide-text-sm"><strong>Pros:</strong> Theoretically pure — it values the company as a perpetuity of growing cash flows. No need for comparable companies.</p>
+          <p class="guide-text-sm"><strong>Cons:</strong> Extremely sensitive to small changes in g. A 0.5% shift can move valuation by 20%+. Assumes constant growth forever, which is unrealistic for high-growth or cyclical firms.</p>
+        </div>
+        <div class="guide-compare-card exit">
+          <div class="guide-compare-title">Exit Multiple Method</div>
+          <div class="formula-box" style="margin:12px 0;">TV = EBITDA₅ × Exit Multiple</div>
+          <p class="guide-text-sm"><strong>When to use:</strong> Companies in sectors with active M&A, or where reliable comparable transaction multiples exist — tech, healthcare, financial services. Also preferred when the company's long-term growth is hard to forecast.</p>
+          <p class="guide-text-sm"><strong>Key input:</strong> The EV/EBITDA multiple is usually derived from comparable public companies or recent M&A transactions in the same sector. Typical ranges: Tech 15–25×, Industrials 8–12×, Utilities 6–9×.</p>
+          <p class="guide-text-sm"><strong>Pros:</strong> Market-grounded — reflects what buyers actually pay. Less sensitive to perpetual growth assumptions. Easier for practitioners to justify.</p>
+          <p class="guide-text-sm"><strong>Cons:</strong> Circular reasoning risk — you're mixing intrinsic (DCF) and relative (multiples) valuation. The multiple itself embeds market sentiment, which may be irrational.</p>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:14px;"><span class="fn-marker">Best practice</span> Many analysts run DCF with both methods and triangulate. If Gordon Growth and Exit Multiple give similar results, you have higher confidence. If they diverge wildly, revisit your assumptions.</div>
+    </div>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">Key Formulas at a Glance</h3>
+      <div class="formula-reference">
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Free Cash Flow</span>
+          <span class="formula-ref-eq">EBIT × (1 − t) + D&A − CapEx − ΔWC</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Discount Factor</span>
+          <span class="formula-ref-eq">1 / (1 + WACC)ⁿ</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Present Value</span>
+          <span class="formula-ref-eq">FCF × Discount Factor</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Enterprise Value</span>
+          <span class="formula-ref-eq">Σ PV(FCFs) + PV(Terminal Value)</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Equity Value</span>
+          <span class="formula-ref-eq">Enterprise Value + Cash − Debt</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">Fair Value / Share</span>
+          <span class="formula-ref-eq">Equity Value ÷ Shares Outstanding</span>
+        </div>
+        <div class="formula-ref-row">
+          <span class="formula-ref-label">NPV (Excel)</span>
+          <span class="formula-ref-eq">=NPV(rate, CF1, CF2, …, CFn)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">Common Pitfalls</h3>
+      <div class="guide-pitfalls">
+        <div class="pitfall">
+          <div class="pitfall-icon">⚠️</div>
+          <div>
+            <strong>Over-optimistic growth rates</strong>
+            <p class="guide-text-sm">Very few companies sustain 10%+ revenue growth for 5 years. Use analyst consensus or historical averages as anchors, not aspirational targets.</p>
+          </div>
+        </div>
+        <div class="pitfall">
+          <div class="pitfall-icon">⚠️</div>
+          <div>
+            <strong>Terminal value domination</strong>
+            <p class="guide-text-sm">In many DCFs, terminal value accounts for 60–80% of total enterprise value. This means your valuation hinges on Year 5+ assumptions. Always sanity-check by computing what implied growth rate the terminal value implies.</p>
+          </div>
+        </div>
+        <div class="pitfall">
+          <div class="pitfall-icon">⚠️</div>
+          <div>
+            <strong>Ignoring working capital</strong>
+            <p class="guide-text-sm">Growing companies tie up cash in inventory and receivables. Omitting ΔWC inflates FCF and overstates valuation.</p>
+          </div>
+        </div>
+        <div class="pitfall">
+          <div class="pitfall-icon">⚠️</div>
+          <div>
+            <strong>Using the wrong WACC</strong>
+            <p class="guide-text-sm">WACC should reflect the company's capital structure and risk profile. Using a generic 10% for every company ignores the fact that a utility and a startup have very different costs of capital.</p>
+          </div>
+        </div>
+        <div class="pitfall">
+          <div class="pitfall-icon">⚠️</div>
+          <div>
+            <strong>Confusing EBIT and EBITDA</strong>
+            <p class="guide-text-sm">FCF starts with EBIT (after D&A), not EBITDA. D&A is then added back. Exit multiples use EBITDA. Mixing these up is a common error.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3 class="guide-heading">BUY vs. SELL Decision</h3>
+      <p class="guide-text">After computing fair value per share, compare it to the current market price:</p>
+      <div class="guide-comparison" style="margin-top:12px;">
+        <div class="guide-compare-card gordon" style="text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">📈</div>
+          <div class="guide-compare-title" style="color:var(--accent);">BUY</div>
+          <p class="guide-text-sm">Fair Value > Market Price → The stock is <strong>undervalued</strong>. The market hasn't priced in the company's true earning potential.</p>
+        </div>
+        <div class="guide-compare-card exit" style="text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">📉</div>
+          <div class="guide-compare-title" style="color:var(--red);">SELL</div>
+          <p class="guide-text-sm">Fair Value < Market Price → The stock is <strong>overvalued</strong>. The market is paying more than what the company's cash flows justify.</p>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:14px;"><span class="fn-marker">Important caveat</span> A DCF is only as good as its assumptions. The recommendation depends entirely on the quality of your revenue forecasts, margin estimates, and discount rate. Always use sensitivity analysis (Step 6) to test how robust your conclusion is.</div>
+    </div>
+
+    <div class="actions">
+      <button class="secondary" onclick="goStep(0)">← Back to Modeler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- State ---
+let forecast = {};
+let dcfResults = {};
+
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function fmt(n) { return n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmt2(n) { return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+// --- Navigation ---
+function goStep(i) {
+  document.querySelectorAll('.panel').forEach((p,idx) => p.classList.toggle('active', idx===i));
+  document.querySelectorAll('.step-btn').forEach((b,idx) => b.classList.toggle('active', idx===i));
+  if (i === 3) recalcDCF();
+  if (i === 4) recalcValuation();
+}
+
+// --- Step 2: Build Forecast ---
+function buildForecast() {
+  const baseRev = v('h_revenue');
+  const growths = [v('g1'), v('g2'), v('g3'), v('g4'), v('g5')];
+  const cogsPct = v('a_cogs_pct') / 100;
+  const sgaPct = v('a_sga_pct') / 100;
+  const daPct = v('a_da_pct') / 100;
+  const capexPct = v('a_capex_pct') / 100;
+  const wcPct = v('a_wc_pct') / 100;
+  const taxRate = v('h_tax') / 100;
+
+  forecast = { years: [], rev: [], cogs: [], grossProfit: [], sga: [], ebitda: [], da: [], ebit: [], tax: [], nopat: [], capex: [], wc: [], taxRate };
+  let rev = baseRev;
+  for (let i = 0; i < 5; i++) {
+    rev = rev * (1 + growths[i] / 100);
+    const cogs = rev * cogsPct;
+    const gp = rev - cogs;
+    const sga = rev * sgaPct;
+    const da = rev * daPct;
+    const ebitda = gp - sga;
+    const ebit = ebitda - da;
+    const tx = ebit * taxRate;
+    const nopat = ebit - tx;
+    forecast.years.push(`Year ${i+1}`);
+    forecast.rev.push(rev);
+    forecast.cogs.push(cogs);
+    forecast.grossProfit.push(gp);
+    forecast.sga.push(sga);
+    forecast.ebitda.push(ebitda);
+    forecast.da.push(da);
+    forecast.ebit.push(ebit);
+    forecast.tax.push(tx);
+    forecast.nopat.push(nopat);
+    forecast.capex.push(rev * capexPct);
+    forecast.wc.push(rev * wcPct);
+  }
+  renderForecastTable();
+}
+
+function renderForecastTable() {
+  const f = forecast;
+  const rows = [
+    { label: 'Revenue', data: f.rev, cls: 'highlight' },
+    { label: 'COGS', data: f.cogs.map(x => -x) },
+    { label: 'Gross Profit', data: f.grossProfit, cls: 'highlight' },
+    { label: 'SG&A', data: f.sga.map(x => -x) },
+    { label: 'EBITDA', data: f.ebitda, cls: 'highlight' },
+    { label: 'D&A', data: f.da.map(x => -x) },
+    { label: 'EBIT', data: f.ebit, cls: 'highlight-gold' },
+  ];
+  let html = '<thead><tr><th></th>';
+  f.years.forEach(y => html += `<th>${y}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(r => {
+    html += `<tr class="${r.cls||''}"><td>${r.label}</td>`;
+    r.data.forEach(d => html += `<td>${fmt(d)}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('forecastTable').innerHTML = html;
+}
+
+// --- Step 3: FCF & DCF ---
+function recalcDCF() {
+  if (!forecast.years || forecast.years.length === 0) buildForecast();
+  const f = forecast;
+  const wacc = v('wacc') / 100;
+  const tgr = v('tgr') / 100;
+  const method = document.getElementById('tv_method').value;
+  const exitMult = v('exit_multiple');
+
+  const fcfs = [];
+  for (let i = 0; i < 5; i++) {
+    const fcf = f.ebit[i] * (1 - f.taxRate) + f.da[i] - f.capex[i] - f.wc[i];
+    fcfs.push(fcf);
+  }
+
+  // Terminal value
+  let tv;
+  if (method === 'gordon') {
+    tv = fcfs[4] * (1 + tgr) / (wacc - tgr);
+  } else {
+    tv = f.ebitda[4] * exitMult;
+  }
+
+  // Discount factors & PV
+  const df = [];
+  const pvFcf = [];
+  for (let i = 0; i < 5; i++) {
+    const d = 1 / Math.pow(1 + wacc, i + 1);
+    df.push(d);
+    pvFcf.push(fcfs[i] * d);
+  }
+  const pvTv = tv * df[4];
+  const npvFcfs = pvFcf.reduce((a, b) => a + b, 0);
+  const ev = npvFcfs + pvTv;
+
+  dcfResults = { fcfs, tv, df, pvFcf, pvTv, npvFcfs, ev };
+  renderFCFTable();
+}
+
+function renderFCFTable() {
+  const f = forecast;
+  const d = dcfResults;
+  let html = '<thead><tr><th></th>';
+  f.years.forEach(y => html += `<th>${y}</th>`);
+  html += '<th>Terminal</th></tr></thead><tbody>';
+
+  const rows = [
+    { label: 'EBIT', data: f.ebit },
+    { label: 'Tax', data: f.tax.map(x => -x) },
+    { label: 'NOPAT', data: f.nopat, cls: '' },
+    { label: '+ D&A', data: f.da },
+    { label: '− CapEx', data: f.capex.map(x => -x) },
+    { label: '− ΔWC', data: f.wc.map(x => -x) },
+  ];
+
+  rows.forEach(r => {
+    html += `<tr class="${r.cls||''}"><td>${r.label}</td>`;
+    r.data.forEach(v => html += `<td>${fmt(v)}</td>`);
+    html += '<td></td></tr>';
+  });
+
+  // FCF row
+  html += '<tr class="highlight"><td>Free Cash Flow</td>';
+  d.fcfs.forEach(v => html += `<td>${fmt(v)}</td>`);
+  html += `<td></td></tr>`;
+
+  // Terminal value
+  html += `<tr class="highlight-gold"><td>Terminal Value</td>`;
+  for(let i=0;i<5;i++) html += '<td></td>';
+  html += `<td>${fmt(d.tv)}</td></tr>`;
+
+  // Discount factor
+  html += '<tr class="section-head"><td colspan="7">Discounting</td></tr>';
+  html += '<tr><td>Discount Factor</td>';
+  d.df.forEach(v => html += `<td>${v.toFixed(4)}</td>`);
+  html += `<td>${d.df[4].toFixed(4)}</td></tr>`;
+
+  // PV
+  html += '<tr class="highlight"><td>PV of Cash Flows</td>';
+  d.pvFcf.forEach(v => html += `<td>${fmt(v)}</td>`);
+  html += `<td>${fmt(d.pvTv)}</td></tr>`;
+
+  html += '</tbody>';
+  document.getElementById('fcfTable').innerHTML = html;
+}
+
+// --- Step 4: Valuation ---
+function recalcValuation() {
+  if (!dcfResults.ev) recalcDCF();
+  const ev = dcfResults.ev;
+  const cash = v('v_cash');
+  const debt = v('v_debt');
+  const shares = v('v_shares');
+  const mktPrice = v('v_market');
+  const eqVal = ev + cash - debt;
+  const fairVal = eqVal / shares;
+  const upside = ((fairVal - mktPrice) / mktPrice * 100);
+  const recommendation = fairVal > mktPrice ? 'BUY' : 'SELL';
+
+  let html = `
+    <div class="result-card"><div class="label">Enterprise Value</div><div class="value blue">$${fmt(ev)}</div></div>
+    <div class="result-card"><div class="label">Equity Value</div><div class="value gold">$${fmt(eqVal)}</div></div>
+    <div class="result-card"><div class="label">Fair Value / Share</div><div class="value">$${fmt2(fairVal)}</div></div>
+    <div class="result-card"><div class="label">Market Price</div><div class="value" style="color:var(--text-muted)">$${fmt2(mktPrice)}</div></div>
+    <div class="result-card"><div class="label">Upside / Downside</div><div class="value" style="color:${upside>=0?'var(--accent)':'var(--red)'}">${upside>=0?'+':''}${fmt2(upside)}%</div></div>
+    <div class="result-card verdict ${recommendation==='SELL'?'sell':''}"><div class="label">Recommendation</div><div class="value">${recommendation}</div></div>
+  `;
+  document.getElementById('valuationResults').innerHTML = html;
+}
+
+// --- Step 5: Sensitivity ---
+function buildSensitivity() {
+  recalcValuation();
+  const baseWacc = v('wacc');
+  const baseTgr = v('tgr');
+  const cash = v('v_cash');
+  const debt = v('v_debt');
+  const shares = v('v_shares');
+  const mktPrice = v('v_market');
+
+  const waccRange = [-2, -1, 0, 1, 2].map(d => baseWacc + d);
+  const tgrRange = [-1, -0.5, 0, 0.5, 1].map(d => baseTgr + d);
+  const method = document.getElementById('tv_method').value;
+  const exitMult = v('exit_multiple');
+
+  function calcFairVal(w, t) {
+    const wacc = w / 100;
+    const tgr = t / 100;
+    if (wacc <= tgr) return NaN;
+    const fcfs = [];
+    for (let i = 0; i < 5; i++) {
+      fcfs.push(forecast.ebit[i] * (1 - forecast.taxRate) + forecast.da[i] - forecast.capex[i] - forecast.wc[i]);
+    }
+    let tv = method === 'gordon' ? fcfs[4] * (1 + tgr) / (wacc - tgr) : forecast.ebitda[4] * exitMult;
+    let ev = 0;
+    for (let i = 0; i < 5; i++) ev += fcfs[i] / Math.pow(1 + wacc, i + 1);
+    ev += tv / Math.pow(1 + wacc, 5);
+    return (ev + cash - debt) / shares;
+  }
+
+  let html = '<div class="sensitivity-grid">';
+  html += '<div class="sens-cell sens-header">WACC \\ TGR</div>';
+  tgrRange.forEach(t => html += `<div class="sens-cell sens-header">${t.toFixed(1)}%</div>`);
+
+  waccRange.forEach(w => {
+    html += `<div class="sens-cell sens-header">${w.toFixed(1)}%</div>`;
+    tgrRange.forEach(t => {
+      const fv = calcFairVal(w, t);
+      const isCenter = w === baseWacc && t === baseTgr;
+      const cls = isNaN(fv) ? '' : (fv > mktPrice ? 'buy' : 'sell');
+      html += `<div class="sens-cell ${cls} ${isCenter?'center':''}">${isNaN(fv) ? '—' : '$'+fmt2(fv)}</div>`;
+    });
+  });
+  html += '</div>';
+  document.getElementById('sensitivityGrid').innerHTML = html;
+}
+
+// Init
+buildForecast();
+recalcDCF();
+recalcValuation();
+</script>
+</body>
+</html>
