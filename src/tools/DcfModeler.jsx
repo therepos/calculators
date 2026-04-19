@@ -6,7 +6,7 @@ import DataTable from '../components/DataTable';
 import { Input, Select, Segment, Section } from '../components/FormControls';
 import { T, mono, fmt, fmt2 } from '../shared';
 
-export default function DcfModeler({ onBack }) {
+export default function DcfModeler() {
   const [step, setStep] = useState('inputs');
   const [h, setH] = useState({ revenue: 10000, cogs: 4000, sga: 1500, da: 700, tax: 21, capex: 800, wc: 200 });
   const [g, setG] = useState({ g1: 12, g2: 10, g3: 8, g4: 6, g5: 4, cogsPct: 40, sgaPct: 15, daPct: 7, capexPct: 8, wcPct: 2 });
@@ -63,95 +63,150 @@ export default function DcfModeler({ onBack }) {
     }));
   }, [results, d, v]);
 
-  const sidebar = (
-    <>
-      <Section title="Step">
-        <Segment value={step} onChange={setStep} options={[
-          { value: 'inputs', label: 'Inputs' }, { value: 'dcf', label: 'DCF' }, { value: 'value', label: 'Value' },
-        ]} />
-      </Section>
-      {step === 'inputs' && <>
-        <Section title="Historicals">
-          <Input label="Revenue ($)" type="number" value={h.revenue} onChange={e => upH('revenue', e.target.value)} />
-          <Input label="COGS ($)" type="number" value={h.cogs} onChange={e => upH('cogs', e.target.value)} />
-          <Input label="SG&A ($)" type="number" value={h.sga} onChange={e => upH('sga', e.target.value)} />
-          <Input label="D&A ($)" type="number" value={h.da} onChange={e => upH('da', e.target.value)} />
-          <Input label="Tax Rate (%)" type="number" value={h.tax} onChange={e => upH('tax', e.target.value)} />
-          <Input label="CapEx ($)" type="number" value={h.capex} onChange={e => upH('capex', e.target.value)} />
-          <Input label="ΔWC ($)" type="number" value={h.wc} onChange={e => upH('wc', e.target.value)} />
-        </Section>
-        <Section title="Growth">
-          {[1, 2, 3, 4, 5].map(i => <Input key={i} label={`Year ${i} (%)`} type="number" value={g[`g${i}`]} onChange={e => upG(`g${i}`, e.target.value)} />)}
-          <Input label="COGS % Rev" type="number" value={g.cogsPct} onChange={e => upG('cogsPct', e.target.value)} />
-          <Input label="SG&A % Rev" type="number" value={g.sgaPct} onChange={e => upG('sgaPct', e.target.value)} />
-          <Input label="D&A % Rev" type="number" value={g.daPct} onChange={e => upG('daPct', e.target.value)} />
-          <Input label="CapEx % Rev" type="number" value={g.capexPct} onChange={e => upG('capexPct', e.target.value)} />
-          <Input label="ΔWC % Rev" type="number" value={g.wcPct} onChange={e => upG('wcPct', e.target.value)} />
-        </Section>
-      </>}
-      {step === 'dcf' && <Section title="Discounting">
-        <Input label="WACC (%)" type="number" value={d.wacc} onChange={e => upD('wacc', e.target.value)} />
-        <Input label="Terminal Growth (%)" type="number" value={d.tgr} onChange={e => upD('tgr', e.target.value)} />
-        <Select label="TV Method" value={d.method} onChange={e => upD('method', e.target.value)}
-          options={[{ value: 'gordon', label: 'Gordon Growth' }, { value: 'exit', label: 'Exit Multiple' }]} />
-        {d.method === 'exit' && <Input label="Exit EV/EBITDA" type="number" value={d.exitMult} onChange={e => upD('exitMult', e.target.value)} />}
-      </Section>}
-      {step === 'value' && <Section title="Bridge to equity">
-        <Input label="Cash ($)" type="number" value={v.cash} onChange={e => upV('cash', e.target.value)} />
-        <Input label="Total Debt ($)" type="number" value={v.debt} onChange={e => upV('debt', e.target.value)} />
-        <Input label="Shares Outstanding" type="number" value={v.shares} onChange={e => upV('shares', e.target.value)} />
-        <Input label="Market Price ($)" type="number" value={v.market} onChange={e => upV('market', e.target.value)} />
-      </Section>}
-    </>
-  );
-
   return (
-    <ToolShell title="DCF Modeler" onBack={onBack} sidebar={sidebar} actions={<NavBtn label="Reset" onClick={() => setH({ revenue: 10000, cogs: 4000, sga: 1500, da: 700, tax: 21, capex: 800, wc: 200 })} />}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
-        <KpiCard label="Enterprise Value" value={fmt(results.ev)} />
-        <KpiCard label="Equity Value" value={fmt(results.eqVal)} />
-        <KpiCard label="Fair Value / Share" value={fmt2(results.fairVal)} />
+    <ToolShell
+      title="DCF Modeler"
+      subtitle="Multi-scenario discounted cash flow"
+      actions={
+        <NavBtn label="Reset" onClick={() => setH({ revenue: 10000, cogs: 4000, sga: 1500, da: 700, tax: 21, capex: 800, wc: 200 })} />
+      }
+    >
+      {/* KPI strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <KpiCard label="Enterprise value" value={fmt(results.ev)} />
+        <KpiCard label="Equity value" value={fmt(results.eqVal)} />
+        <KpiCard label="Fair value / share" value={fmt2(results.fairVal)} />
         <KpiCard label="Upside" value={`${results.upside >= 0 ? '+' : ''}${results.upside.toFixed(1)}%`} delta={results.upside >= 0 ? 'BUY' : 'SELL'} up={results.upside >= 0} />
       </div>
-      <Section title="5-Year Forecast">
-        <DataTable headers={['', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5']} rows={[
-          ['Revenue', ...results.revs.map(fmt)],
-          ['COGS', ...results.cogs.map(v => fmt(-v))],
-          ['SG&A', ...results.sga.map(v => fmt(-v))],
-          ['D&A', ...results.da.map(v => fmt(-v))],
-          ['EBIT', ...results.ebit.map(fmt)],
-        ]} />
-      </Section>
-      <Section title="FCF & DCF">
-        <DataTable headers={['', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Terminal']} rows={[
-          ['FCF', ...results.fcfs.map(fmt), ''],
-          ['Discount Factor', ...results.df.map(d => d.toFixed(4)), results.df[4].toFixed(4)],
-          ['PV', ...results.pvFcf.map(fmt), fmt(results.pvTv)],
-        ]} />
-      </Section>
-      <Section title="Sensitivity — Fair Value / Share">
-        <div style={{ borderRadius: T.radius, overflow: 'hidden', border: `1px solid ${T.border}`, background: T.white, boxShadow: T.shadow }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: mono }}>
-            <thead><tr>
-              <th style={{ background: T.surface2, padding: '8px 10px', fontSize: 11, color: T.text3, textAlign: 'center', borderBottom: `1px solid ${T.border}` }}>WACC\TGR</th>
-              {[-1, -0.5, 0, 0.5, 1].map(x => <th key={x} style={{ background: T.surface2, padding: '8px 10px', fontSize: 11, color: T.text3, textAlign: 'center', borderBottom: `1px solid ${T.border}` }}>{(d.tgr + x).toFixed(1)}%</th>)}
-            </tr></thead>
-            <tbody>
-              {sensTable.map((row, ri) => (
-                <tr key={ri}>
-                  <td style={{ padding: '8px 10px', fontWeight: 600, color: T.text3, textAlign: 'center', background: T.surface2, borderBottom: `1px solid ${T.border}` }}>{(d.wacc - 2 + ri).toFixed(1)}%</td>
-                  {row.map((val, ci) => {
-                    const isCenter = ri === 2 && ci === 2;
-                    const bg = val === null ? 'transparent' : val > v.market ? T.greenSoft : T.redSoft;
-                    const color = val === null ? T.text4 : val > v.market ? T.greenDk : T.red;
-                    return <td key={ci} style={{ padding: '8px 10px', textAlign: 'center', background: isCenter ? T.accentSoft : bg, color, fontWeight: isCenter ? 700 : 400, borderBottom: `1px solid ${T.border}` }}>{val === null ? '—' : fmt2(val)}</td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+      {/* Main two-column: inputs panel + results */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20 }}>
+        {/* ─── Results ─── */}
+        <div>
+          <Section title="5-year forecast">
+            <DataTable headers={['', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5']} rows={[
+              ['Revenue', ...results.revs.map(fmt)],
+              ['COGS', ...results.cogs.map(v => fmt(-v))],
+              ['SG&A', ...results.sga.map(v => fmt(-v))],
+              ['D&A', ...results.da.map(v => fmt(-v))],
+              ['EBIT', ...results.ebit.map(fmt)],
+            ]} />
+          </Section>
+
+          <Section title="FCF & DCF">
+            <DataTable headers={['', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Terminal']} rows={[
+              ['FCF', ...results.fcfs.map(fmt), ''],
+              ['Discount factor', ...results.df.map(d => d.toFixed(4)), results.df[4].toFixed(4)],
+              ['PV', ...results.pvFcf.map(fmt), fmt(results.pvTv)],
+            ]} />
+          </Section>
+
+          <Section title="Sensitivity — fair value / share">
+            <div style={{ borderRadius: T.radius, overflow: 'hidden', border: `1px solid ${T.border}`, background: T.white }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: mono }}>
+                <thead>
+                  <tr>
+                    <th style={sensTh()}>WACC\TGR</th>
+                    {[-1, -0.5, 0, 0.5, 1].map(x => (
+                      <th key={x} style={sensTh()}>{(d.tgr + x).toFixed(1)}%</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sensTable.map((row, ri) => (
+                    <tr key={ri}>
+                      <td style={{ ...sensTd(), fontWeight: 600, color: T.text3, background: T.surface2, textAlign: 'center' }}>
+                        {(d.wacc - 2 + ri).toFixed(1)}%
+                      </td>
+                      {row.map((val, ci) => {
+                        const isCenter = ri === 2 && ci === 2;
+                        const bg = val == null ? 'transparent' : val > v.market ? T.greenSoft : T.redSoft;
+                        const color = val == null ? T.text4 : val > v.market ? T.greenDk : T.red;
+                        return (
+                          <td key={ci} style={{
+                            ...sensTd(),
+                            background: isCenter ? T.accentSoft : bg,
+                            color, fontWeight: isCenter ? 600 : 400,
+                            textAlign: 'center',
+                          }}>{val == null ? '—' : fmt2(val)}</td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
         </div>
-      </Section>
+
+        {/* ─── Inputs side panel ─── */}
+        <div style={{
+          background: T.white, borderRadius: T.radiusLg,
+          border: `1px solid ${T.border}`, padding: '18px 20px',
+          alignSelf: 'start', position: 'sticky', top: 24,
+        }}>
+          <Section title="Step">
+            <Segment value={step} onChange={setStep} options={[
+              { value: 'inputs', label: 'Inputs' },
+              { value: 'dcf', label: 'DCF' },
+              { value: 'value', label: 'Value' },
+            ]} style={{ width: '100%' }} />
+          </Section>
+          {step === 'inputs' && (
+            <>
+              <Section title="Historicals">
+                <Input label="Revenue ($)" type="number" value={h.revenue} onChange={e => upH('revenue', e.target.value)} />
+                <Input label="COGS ($)" type="number" value={h.cogs} onChange={e => upH('cogs', e.target.value)} />
+                <Input label="SG&A ($)" type="number" value={h.sga} onChange={e => upH('sga', e.target.value)} />
+                <Input label="D&A ($)" type="number" value={h.da} onChange={e => upH('da', e.target.value)} />
+                <Input label="Tax rate (%)" type="number" value={h.tax} onChange={e => upH('tax', e.target.value)} />
+                <Input label="CapEx ($)" type="number" value={h.capex} onChange={e => upH('capex', e.target.value)} />
+                <Input label="ΔWC ($)" type="number" value={h.wc} onChange={e => upH('wc', e.target.value)} />
+              </Section>
+              <Section title="Growth">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Input key={i} label={`Year ${i} (%)`} type="number" value={g[`g${i}`]} onChange={e => upG(`g${i}`, e.target.value)} />
+                ))}
+                <Input label="COGS % Rev" type="number" value={g.cogsPct} onChange={e => upG('cogsPct', e.target.value)} />
+                <Input label="SG&A % Rev" type="number" value={g.sgaPct} onChange={e => upG('sgaPct', e.target.value)} />
+                <Input label="D&A % Rev" type="number" value={g.daPct} onChange={e => upG('daPct', e.target.value)} />
+                <Input label="CapEx % Rev" type="number" value={g.capexPct} onChange={e => upG('capexPct', e.target.value)} />
+                <Input label="ΔWC % Rev" type="number" value={g.wcPct} onChange={e => upG('wcPct', e.target.value)} />
+              </Section>
+            </>
+          )}
+          {step === 'dcf' && (
+            <Section title="Discounting">
+              <Input label="WACC (%)" type="number" value={d.wacc} onChange={e => upD('wacc', e.target.value)} />
+              <Input label="Terminal growth (%)" type="number" value={d.tgr} onChange={e => upD('tgr', e.target.value)} />
+              <Select label="TV method" value={d.method} onChange={e => upD('method', e.target.value)}
+                options={[{ value: 'gordon', label: 'Gordon growth' }, { value: 'exit', label: 'Exit multiple' }]} />
+              {d.method === 'exit' && <Input label="Exit EV/EBITDA" type="number" value={d.exitMult} onChange={e => upD('exitMult', e.target.value)} />}
+            </Section>
+          )}
+          {step === 'value' && (
+            <Section title="Bridge to equity">
+              <Input label="Cash ($)" type="number" value={v.cash} onChange={e => upV('cash', e.target.value)} />
+              <Input label="Total debt ($)" type="number" value={v.debt} onChange={e => upV('debt', e.target.value)} />
+              <Input label="Shares outstanding" type="number" value={v.shares} onChange={e => upV('shares', e.target.value)} />
+              <Input label="Market price ($)" type="number" value={v.market} onChange={e => upV('market', e.target.value)} />
+            </Section>
+          )}
+        </div>
+      </div>
     </ToolShell>
   );
+}
+
+function sensTh() {
+  return {
+    background: T.surface2, padding: '9px 10px', fontSize: 11,
+    color: T.text3, textAlign: 'center',
+    borderBottom: `1px solid ${T.border}`, fontWeight: 600,
+  };
+}
+function sensTd() {
+  return {
+    padding: '9px 10px', borderBottom: `1px solid ${T.border}`,
+  };
 }

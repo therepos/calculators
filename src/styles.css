@@ -2,50 +2,48 @@
    Praxis Design System — Global Styles
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --px-bg: #F0F1F5;
+  --px-bg: #F6F7FB;
   --px-white: #FFFFFF;
-  --px-surface2: #F6F7FA;
-  --px-border: #E2E4EA;
-  --px-border2: #D0D3DB;
+  --px-surface2: #F1F3F8;
+  --px-border: #E4E6ED;
+  --px-border2: #CFD3DC;
 
-  --px-text: #111318;
-  --px-text2: #3B3F4A;
-  --px-text3: #6B7080;
-  --px-text4: #9CA1AE;
+  --px-text: #0F172A;
+  --px-text2: #334155;
+  --px-text3: #64748B;
+  --px-text4: #94A3B8;
 
-  --px-accent: #3B5BDB;
-  --px-accent-hover: #364FC7;
-  --px-accent-soft: rgba(59,91,219,0.07);
-  --px-green: #2B9348;
-  --px-green-dk: #1E6B33;
-  --px-green-soft: rgba(43,147,72,0.08);
-  --px-red: #E03131;
-  --px-red-soft: rgba(224,49,49,0.07);
-  --px-orange: #E67700;
-  --px-orange-soft: rgba(230,119,0,0.07);
-  --px-purple: #7048E8;
-  --px-purple-soft: rgba(112,72,232,0.07);
+  --px-accent: #175DDC;
+  --px-accent-hover: #124FB8;
+  --px-accent-soft: #E8EFFB;
 
-  --px-sidebar: #1A1D24;
-  --px-sidebar-hover: #252830;
-  --px-sidebar-text: #C1C5CF;
-  --px-sidebar-active: #FFFFFF;
+  --px-green: #0F7B3F;
+  --px-green-dk: #0A5A2D;
+  --px-green-soft: #E1F5EE;
+  --px-red: #D6293E;
+  --px-red-soft: #FCEBEB;
+  --px-amber: #B45309;
+  --px-amber-soft: #FAEEDA;
 
-  --px-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --px-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-  --px-shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.06);
+  --px-sidebar: #0F172A;
+  --px-sidebar-hover: #1E293B;
+  --px-sidebar-text: #CBD5E1;
 
-  --px-radius: 10px;
+  --px-shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
+  --px-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  --px-shadow-hover: 0 4px 12px rgba(15,23,42,0.08);
+
+  --px-radius: 8px;
   --px-radius-sm: 6px;
-  --px-radius-lg: 14px;
+  --px-radius-lg: 12px;
 
-  --px-font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --px-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --px-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
 
-  --px-transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --px-transition: 0.15s ease;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,9 +66,12 @@ input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-::selection { background: rgba(59,91,219,0.18); }
+::selection { background: rgba(23,93,220,0.15); }
 
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--px-border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--px-border2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--px-text4); }
+
+details summary { cursor: pointer; list-style: none; }
+details summary::-webkit-details-marker { display: none; }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AppShell from './components/AppShell';
 import Home from './Home';
 import DcfModeler from './tools/DcfModeler';
 import LeaseCalc from './tools/LeaseCalc';
@@ -8,14 +9,21 @@ import VaultMerge from './tools/VaultMerge';
 
 export default function App() {
   const [page, setPage] = useState('home');
-  const goHome = () => setPage('home');
 
-  switch (page) {
-    case 'dcf': return <DcfModeler onBack={goHome} />;
-    case 'lease': return <LeaseCalc onBack={goHome} />;
-    case 'saas': return <SaasPlanner onBack={goHome} />;
-    case 'eng': return <EngEconomics onBack={goHome} />;
-    case 'vault': return <VaultMerge onBack={goHome} />;
-    default: return <Home onNavigate={setPage} />;
-  }
+  const view = (() => {
+    switch (page) {
+      case 'dcf':   return <DcfModeler />;
+      case 'lease': return <LeaseCalc />;
+      case 'saas':  return <SaasPlanner />;
+      case 'eng':   return <EngEconomics />;
+      case 'vault': return <VaultMerge />;
+      default:      return <Home onNavigate={setPage} />;
+    }
+  })();
+
+  return (
+    <AppShell active={page} onNavigate={setPage}>
+      {view}
+    </AppShell>
+  );
 }

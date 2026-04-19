@@ -1,43 +1,71 @@
 /* ═══════════════════════════════════════════════════════════════
-   shared.jsx — Constants, tokens (JS), icons, formatting utils.
+   shared.jsx — Design tokens (JS), icons, formatting, tool manifest.
+   Palette: Vaultwarden-inspired (blue primary, dark left rail,
+   clean white surfaces, readable typography).
    ═══════════════════════════════════════════════════════════════ */
 
 export const T = {
-  bg: '#F0F1F5',
+  // Surfaces
+  bg: '#F6F7FB',
   white: '#FFFFFF',
-  surface2: '#F6F7FA',
-  border: '#E2E4EA',
-  border2: '#D0D3DB',
-  text: '#111318',
-  text2: '#3B3F4A',
-  text3: '#6B7080',
-  text4: '#9CA1AE',
-  accent: '#3B5BDB',
-  accentHover: '#364FC7',
-  accentSoft: 'rgba(59,91,219,0.07)',
-  green: '#2B9348',
-  greenDk: '#1E6B33',
-  greenSoft: 'rgba(43,147,72,0.08)',
-  red: '#E03131',
-  redSoft: 'rgba(224,49,49,0.07)',
-  orange: '#E67700',
-  orangeSoft: 'rgba(230,119,0,0.07)',
-  purple: '#7048E8',
-  purpleSoft: 'rgba(112,72,232,0.07)',
-  sidebar: '#1A1D24',
-  sidebarHover: '#252830',
-  sidebarText: '#C1C5CF',
-  sidebarActive: '#FFFFFF',
-  shadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-  shadowHover: '0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.06)',
-  shadowSm: '0 1px 2px rgba(0,0,0,0.05)',
-  radius: 10,
+  surface2: '#F1F3F8',
+  border: '#E4E6ED',
+  border2: '#CFD3DC',
+
+  // Text
+  text: '#0F172A',
+  text2: '#334155',
+  text3: '#64748B',
+  text4: '#94A3B8',
+
+  // Primary accent (Vaultwarden blue)
+  accent: '#175DDC',
+  accentHover: '#124FB8',
+  accentSoft: '#E8EFFB',
+  accentSoft2: '#D8E3F7',
+
+  // Semantic
+  green: '#0F7B3F',
+  greenDk: '#0A5A2D',
+  greenSoft: '#E1F5EE',
+  greenBdr: '#5DCAA5',
+  red: '#D6293E',
+  redSoft: '#FCEBEB',
+  redBdr: '#F09595',
+  amber: '#B45309',
+  amberVal: '#854F0B',
+  amberSoft: '#FAEEDA',
+  amberBdr: '#EF9F27',
+  blueSec: '#185FA5',
+  blueSecText: '#0C447C',
+  blueSecSoft: '#E6F1FB',
+  blueSecBdr: '#85B7EB',
+
+  // Sidebar (dark rail)
+  sidebar: '#0F172A',
+  sidebarHover: '#1E293B',
+  sidebarActive: '#175DDC',
+  sidebarText: '#CBD5E1',
+  sidebarTextMuted: '#64748B',
+  sidebarTextActive: '#FFFFFF',
+  sidebarBorder: '#1E293B',
+
+  // Shadows
+  shadow: '0 1px 2px rgba(15,23,42,0.04)',
+  shadowHover: '0 4px 12px rgba(15,23,42,0.08)',
+  shadowSm: '0 1px 2px rgba(15,23,42,0.04)',
+
+  // Shape
+  radius: 8,
   radiusSm: 6,
-  radiusLg: 14,
-  transition: '0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+  radiusLg: 12,
+  transition: '0.15s ease',
+
+  // Layout
+  sidebarWidth: 220,
 };
 
-export const font = `'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif`;
+export const font = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 export const mono = `'JetBrains Mono', 'SF Mono', 'Menlo', monospace`;
 
 // ─── Formatting ───
@@ -47,24 +75,77 @@ export const pct = n => n == null || isNaN(n) ? '—' : (n * 100).toFixed(1) + '
 export const pct0 = n => n == null || isNaN(n) ? '—' : Math.round(n * 100) + '%';
 export const fmtN = n => n == null || isNaN(n) ? '—' : Math.round(n).toLocaleString('en-US');
 
-// ─── Icons (inline SVG) ───
-export const ChevronLeft = ({ size = 14, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text3} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+// ─── Icons (inline SVG, stroke-based) ───
+const iconBase = { fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' };
+
+export const ChevronLeft = ({ size = 16, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="2" {...iconBase}>
     <path d="M15 19l-7-7 7-7" />
   </svg>
 );
 
-export const SearchIcon = ({ size = 15, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text4} strokeWidth="2" strokeLinecap="round">
+export const SearchIcon = ({ size = 16, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="2" {...iconBase}>
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+  </svg>
+);
+
+export const HomeIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <path d="M3 12L12 4l9 8" /><path d="M5 10v10h5v-6h4v6h5V10" />
+  </svg>
+);
+
+export const ChartIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <path d="M3 3v18h18" /><path d="M7 15l4-4 4 4 5-5" />
+  </svg>
+);
+
+export const RulerIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <rect x="3" y="8" width="18" height="8" rx="1" />
+    <path d="M7 8v3M10 8v4M13 8v3M16 8v4" />
+  </svg>
+);
+
+export const FileIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+    <path d="M14 3v6h6" />
+  </svg>
+);
+
+export const TrendingIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <path d="M22 7l-8.5 8.5-5-5L2 17" /><path d="M16 7h6v6" />
+  </svg>
+);
+
+export const LockIcon = ({ size = 18, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="1.8" {...iconBase}>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </svg>
+);
+
+export const PlusIcon = ({ size = 16, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="2" {...iconBase}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const XIcon = ({ size = 14, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" stroke={color || 'currentColor'} strokeWidth="2" {...iconBase}>
+    <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
 
 // ─── Tool manifest ───
 export const TOOLS = [
-  { id: 'dcf', icon: '📊', title: 'DCF Modeler', desc: 'Multi-scenario discounted cash flow valuation with sensitivity tables.', cat: 'Finance', color: T.accent },
-  { id: 'eng', icon: '📐', title: 'Engagement Economics', desc: 'Budget planning, ETC tracking, NSR, ANSR, margin monitoring.', cat: 'Operations', color: T.green },
-  { id: 'lease', icon: '📋', title: 'Lease Accounting', desc: 'IFRS 16 and ASC 842 lease liability and ROU asset schedules.', cat: 'Finance', color: T.accent },
-  { id: 'saas', icon: '📈', title: 'SaaS Planner', desc: 'ARR, MRR, churn, LTV, CAC — model unit economics across scenarios.', cat: 'Finance', color: T.purple },
-  { id: 'vault', icon: '🔐', title: 'VaultMerge', desc: 'Merge Brave browser passwords into a Vaultwarden export.', cat: 'Utilities', color: T.text3 },
+  { id: 'dcf',   icon: ChartIcon,    title: 'DCF Modeler',          desc: 'Multi-scenario discounted cash flow valuation with sensitivity tables.', cat: 'Finance' },
+  { id: 'eng',   icon: RulerIcon,    title: 'Engagement Economics', desc: 'Budget planning, ETC tracking, NSR, ANSR, margin monitoring.',          cat: 'Operations' },
+  { id: 'lease', icon: FileIcon,     title: 'Lease Accounting',     desc: 'IFRS 16 and ASC 842 lease liability and ROU asset schedules.',          cat: 'Finance' },
+  { id: 'saas',  icon: TrendingIcon, title: 'SaaS Planner',         desc: 'ARR, MRR, churn, LTV, CAC — model unit economics across scenarios.',    cat: 'Finance' },
+  { id: 'vault', icon: LockIcon,     title: 'VaultMerge',           desc: 'Merge Brave browser passwords into a Vaultwarden export.',              cat: 'Utilities' },
 ];

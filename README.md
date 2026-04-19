@@ -28,17 +28,19 @@ npm run preview  # preview production build
 
 ```
 src/
-├── App.jsx              # Router
-├── Home.jsx             # Homepage card grid
-├── shared.jsx           # Tokens, icons, formatting utils
-├── styles.css           # Design system (single source of truth)
-├── components/          # Reusable UI blocks
-│   ├── ToolShell.jsx    # Sidebar + content layout
-│   ├── KpiCard.jsx      # Metric display with delta badge
-│   ├── DataTable.jsx    # Financial data table
-│   ├── FormControls.jsx # Input, Select, Segment, Section, Btn
-│   └── Navbar.jsx       # Frosted breadcrumb bar
-└── tools/               # One file per tool (logic only)
+├── App.jsx                   # Route state + AppShell wrapper
+├── Home.jsx                  # Tool landing (card grid)
+├── shared.jsx                # Tokens, icons, formatters, tool manifest
+├── styles.css                # Design system (single source of truth)
+├── components/
+│   ├── AppShell.jsx          # Persistent sidebar + content area
+│   ├── Sidebar.jsx           # Dark left rail with tool navigation
+│   ├── ToolShell.jsx         # Per-tool top bar + full-width content
+│   ├── Navbar.jsx            # NavBtn (action button in top bar)
+│   ├── KpiCard.jsx           # Metric display with delta badge
+│   ├── DataTable.jsx         # Financial data table
+│   └── FormControls.jsx      # Input, Select, Segment, Section, Btn, InfoBox
+└── tools/                    # One file per tool — logic + layout
     ├── DcfModeler.jsx
     ├── EngEconomics.jsx
     ├── LeaseCalc.jsx
@@ -46,15 +48,20 @@ src/
     └── VaultMerge.jsx
 ```
 
+### Layout
+
+- `AppShell` is the outermost layout — a fixed dark `Sidebar` on the left (tool navigation) and a full-width content area on the right.
+- Each tool renders a `ToolShell` inside that content area, which provides a top bar (title + subtitle + actions) and a full-width content zone.
+- Tool-specific inputs live inline (settings card, sticky right panel, or section of the tool itself) — the global sidebar is for navigation only.
+
 ### Design change layers
 
 | Layer | Files | What changes |
 |-------|-------|-------------|
-| **Tokens** | `styles.css`, `shared.jsx` | Colors, fonts, spacing, shadows |
-| **Components** | `components/` | Layout patterns, UI blocks |
-| **Tools** | `tools/` | Business logic only — never for design |
-
-A full design overhaul touches layers 1–2. Tool files stay untouched.
+| **Tokens** | `styles.css`, `shared.jsx` | Colors, fonts, spacing, radii |
+| **Shell** | `AppShell.jsx`, `Sidebar.jsx`, `ToolShell.jsx` | Global layout chrome |
+| **Components** | `components/*.jsx` | Reusable UI blocks |
+| **Tools** | `tools/*.jsx` | Tool-specific layout + business logic |
 
 ## License
 

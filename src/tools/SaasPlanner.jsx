@@ -3,9 +3,9 @@ import ToolShell from '../components/ToolShell';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
 import { Input, Section } from '../components/FormControls';
-import { fmt, fmtN } from '../shared';
+import { T, fmt, fmtN } from '../shared';
 
-export default function SaasPlanner({ onBack }) {
+export default function SaasPlanner() {
   const [s, setS] = useState({ pPrice: 29, pSubs: 500, pGrowth: 8, pChurn: 3, ePrice: 199, eSubs: 50, eGrowth: 5, eChurn: 1.5, months: 24 });
   const up = (k, val) => setS(p => ({ ...p, [k]: +val }));
 
@@ -23,42 +23,50 @@ export default function SaasPlanner({ onBack }) {
   }, [s]);
 
   const first = data[0], last = data[data.length - 1];
-  const sidebar = (
-    <>
-      <Section title="Personal plan">
-        <Input label="Price ($/mo)" type="number" value={s.pPrice} onChange={e => up('pPrice', e.target.value)} />
-        <Input label="Starting Subs" type="number" value={s.pSubs} onChange={e => up('pSubs', e.target.value)} />
-        <Input label="Monthly Growth (%)" type="number" value={s.pGrowth} onChange={e => up('pGrowth', e.target.value)} />
-        <Input label="Monthly Churn (%)" type="number" value={s.pChurn} onChange={e => up('pChurn', e.target.value)} />
-      </Section>
-      <Section title="Enterprise plan">
-        <Input label="Price ($/mo)" type="number" value={s.ePrice} onChange={e => up('ePrice', e.target.value)} />
-        <Input label="Starting Subs" type="number" value={s.eSubs} onChange={e => up('eSubs', e.target.value)} />
-        <Input label="Monthly Growth (%)" type="number" value={s.eGrowth} onChange={e => up('eGrowth', e.target.value)} />
-        <Input label="Monthly Churn (%)" type="number" value={s.eChurn} onChange={e => up('eChurn', e.target.value)} />
-      </Section>
-      <Section title="Horizon">
-        <Input label="Months" type="number" value={s.months} onChange={e => up('months', e.target.value)} />
-      </Section>
-    </>
-  );
 
   return (
-    <ToolShell title="SaaS Scenario Planner" onBack={onBack} sidebar={sidebar}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
+    <ToolShell title="SaaS Scenario Planner" subtitle="Unit economics across scenarios">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
         <KpiCard label="Current MRR" value={fmt(first.totalMRR)} />
         <KpiCard label={`MRR at M${s.months}`} value={fmt(last.totalMRR)} delta={`${((last.totalMRR / first.totalMRR - 1) * 100).toFixed(0)}%`} up={last.totalMRR > first.totalMRR} />
-        <KpiCard label="Cumulative Rev" value={fmt(last.cumul)} />
+        <KpiCard label="Cumulative rev" value={fmt(last.cumul)} />
         <KpiCard label={`Subs at M${s.months}`} value={fmtN(last.pSubs + last.eSubs)} />
       </div>
-      <Section title="Monthly Breakdown">
-        <DataTable
-          headers={['Month', 'P. Subs', 'P. MRR', 'E. Subs', 'E. MRR', 'Total MRR', 'Cumulative']}
-          rows={data.filter((_, i) => i % Math.max(1, Math.floor(data.length / 18)) === 0 || i === data.length - 1).map(d => [
-            `M${d.m}`, fmtN(d.pSubs), fmt(d.pMRR), fmtN(d.eSubs), fmt(d.eMRR), fmt(d.totalMRR), fmt(d.cumul),
-          ])}
-        />
-      </Section>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20 }}>
+        <div>
+          <Section title="Monthly breakdown">
+            <DataTable
+              headers={['Month', 'P. subs', 'P. MRR', 'E. subs', 'E. MRR', 'Total MRR', 'Cumulative']}
+              rows={data.filter((_, i) => i % Math.max(1, Math.floor(data.length / 18)) === 0 || i === data.length - 1).map(d => [
+                `M${d.m}`, fmtN(d.pSubs), fmt(d.pMRR), fmtN(d.eSubs), fmt(d.eMRR), fmt(d.totalMRR), fmt(d.cumul),
+              ])}
+            />
+          </Section>
+        </div>
+
+        <div style={{
+          background: T.white, borderRadius: T.radiusLg,
+          border: `1px solid ${T.border}`, padding: '18px 20px',
+          alignSelf: 'start', position: 'sticky', top: 24,
+        }}>
+          <Section title="Personal plan">
+            <Input label="Price ($/mo)" type="number" value={s.pPrice} onChange={e => up('pPrice', e.target.value)} />
+            <Input label="Starting subs" type="number" value={s.pSubs} onChange={e => up('pSubs', e.target.value)} />
+            <Input label="Monthly growth (%)" type="number" value={s.pGrowth} onChange={e => up('pGrowth', e.target.value)} />
+            <Input label="Monthly churn (%)" type="number" value={s.pChurn} onChange={e => up('pChurn', e.target.value)} />
+          </Section>
+          <Section title="Enterprise plan">
+            <Input label="Price ($/mo)" type="number" value={s.ePrice} onChange={e => up('ePrice', e.target.value)} />
+            <Input label="Starting subs" type="number" value={s.eSubs} onChange={e => up('eSubs', e.target.value)} />
+            <Input label="Monthly growth (%)" type="number" value={s.eGrowth} onChange={e => up('eGrowth', e.target.value)} />
+            <Input label="Monthly churn (%)" type="number" value={s.eChurn} onChange={e => up('eChurn', e.target.value)} />
+          </Section>
+          <Section title="Horizon">
+            <Input label="Months" type="number" value={s.months} onChange={e => up('months', e.target.value)} />
+          </Section>
+        </div>
+      </div>
     </ToolShell>
   );
 }
