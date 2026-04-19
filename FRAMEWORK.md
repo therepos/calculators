@@ -366,6 +366,7 @@ When a tool puts inputs in a 320px sticky right-side panel (DCF, Lease, SaaS), b
 - Never compute layout dimensions in JS from `window.innerWidth`. CSS media queries are cheaper, more reliable, and SSR-safe.
 - Never add a media query for a breakpoint no content actually needs. Every breakpoint adds complexity and must earn its place.
 - Never let responsive behavior ship unverified. Test at 375px (iPhone SE), 768px (iPad portrait), and desktop before shipping any layout change.
+- **Never use bare `1fr` in `grid-template-columns`.** Always use `minmax(0, 1fr)`. Grid tracks default to `min-width: auto`, which means any intrinsically-wide descendant (a wide table, a min-width scroll container, a long unbroken string) can stretch the track past its container. This silently breaks `overflow-x: auto` on inner wrappers because the parent is already overflowing *upward*. `minmax(0, 1fr)` clamps the track at the container width regardless of content, letting inner scroll regions actually scroll. This bug is invisible until you test on mobile with real content.
 
 ### Minimal viewport checklist
 
