@@ -27,6 +27,12 @@ Don't cycle through colours like a rainbow. A screen with gray + blue + green re
 
 **Full-width content by default.** Resist the urge to cap content at 720px/960px/1200px. Tools and dashboards use the whole viewport. Editorial content (articles, prose) is the exception where narrow columns help readability.
 
+**Use screen real estate.** Users shouldn't scroll to see the gist. Lay out inputs and key outputs so both are visible on a standard desktop viewport without scrolling. If there are too many inputs for one screen, group them into a card that scrolls inside itself — don't push results below the fold.
+
+**Inputs first, results follow.** On any tool with user inputs, inputs come before results in reading order (left / top). Without inputs there are no results; showing results first confuses users about what to do. The canonical pattern: inputs card on the left, 4 headline metrics on the right, detailed result tables full-width below.
+
+**What's important comes first.** Ranking applies top-to-bottom: headline metrics above detailed breakdowns, primary actions above secondary, frequently-used fields above rarely-used ones.
+
 **Generous whitespace, consistent rhythm.** Pad cards 20–24px. Gap between cards 16–20px. Vertical rhythm in rem (1rem, 1.5rem, 2rem), internal gaps in px (8, 12, 16).
 
 ---
@@ -95,16 +101,16 @@ Every tool-style app needs these primitives. Build once, reuse everywhere. If yo
 - Each page in the content area has a top bar: title + subtitle on the left, actions on the right
 - Top bar is ~68px tall, white background, single border below
 
-**The two-card pattern** (for calculator-style tools with inputs + outputs):
-- Left card: inputs, controls, action buttons
-- Right card: derived metrics, stat rows, readouts
-- Aspect ratio roughly 1.15:1 (inputs slightly wider)
-- On mobile: stack vertically
+**The inputs-first tool pattern** (for calculator-style tools — the canonical layout):
+- Top row, two cards side-by-side:
+  - Left card (wider, ~1.15fr): all user inputs, grouped in labelled Sections. Inputs laid out in 2-col grids inside each section. Nothing hidden behind tabs/steps — all inputs visible at once.
+  - Right card (~1fr): 4 headline metrics as KpiCards in a 2×2 grid. These are the "answers" the tool exists to produce.
+- Below, full-width: result tables, schedules, sensitivity matrices, forecasts. Each in its own Section with an eyebrow label.
+- On mobile: the two cards stack (inputs first, metrics second), tables scroll horizontally if wide.
 
-**The sticky input panel pattern** (for tools with many inputs + tables):
-- Main content flows on the left (tables, charts)
-- Sticky input card on the right (~320px, alignSelf: start, position: sticky, top: 24px)
-- Inputs stay visible as user scrolls through output
+Why inputs-first: without inputs there are no results. Users land on a tool and need to see what to fill in; results are the payoff that appears as they work. Hiding inputs behind a 320px sticky side panel — or worse, behind "Step 1 / Step 2 / Step 3" segments — makes the tool feel like a form to navigate instead of a workspace to inhabit.
+
+Why KpiCard 2×2 on the right: four metrics is the typical headline count (EV / Equity / Fair value / Upside; PV / ROU / Monthly dep / Total; MRR / End MRR / Cumulative / End subs). A 2×2 fits in a narrow right card without squashing and gives each metric equal weight.
 
 **The landing card grid** (for tool selectors, dashboards):
 - `grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))`
