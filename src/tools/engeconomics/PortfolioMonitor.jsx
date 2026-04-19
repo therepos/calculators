@@ -157,7 +157,7 @@ export default function PortfolioMonitor({ onOpenEngagement }) {
   return (
     <div>
       {/* Import bar */}
-      <div style={{
+      <div className="px-pm-importbar" style={{
         background: T.white, border: `1px solid ${T.border}`, borderRadius: T.radius,
         padding: '14px 18px', display: 'flex', gap: 12, alignItems: 'center',
         flexWrap: 'wrap', marginBottom: 18,
@@ -194,7 +194,7 @@ export default function PortfolioMonitor({ onOpenEngagement }) {
       {data.length > 0 && (
         <>
           {/* KPI strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 18 }}>
+          <div className="px-kpi-strip-5" style={{ marginBottom: 18 }}>
             <KpiBig label="Engagements" value={total} sub="Active ETD" />
             <KpiBig label="Overrun" value={ov} sub="TER > 100%" color={T.red} />
             <KpiBig label="Near overrun" value={nr} sub="TER 90–100%" color="#E49B0F" />
@@ -241,11 +241,10 @@ export default function PortfolioMonitor({ onOpenEngagement }) {
               <span style={{ display: 'inline-block', width: 6, height: 6, background: T.accent, borderRadius: 2, marginRight: 8, verticalAlign: 'middle' }} />
               Auto-triage — recommended actions
             </div>
-            <div style={{
+            <div className="px-table-scroll" style={{
               background: T.white, border: `1px solid ${T.border}`, borderRadius: T.radius,
-              overflow: 'hidden', overflowX: 'auto',
             }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 1000 }}>
                 <thead>
                   <tr>
                     {['Status', 'Engagement', 'Client', 'TER Bud', 'TER Act', 'TER %', 'NUI', 'Margin', 'Backlog', 'Strategy', 'Action'].map((h, i) => (

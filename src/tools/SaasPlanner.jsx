@@ -26,14 +26,14 @@ export default function SaasPlanner() {
 
   return (
     <ToolShell title="SaaS Scenario Planner" subtitle="Unit economics across scenarios">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="px-kpi-auto" style={{ marginBottom: 24 }}>
         <KpiCard label="Current MRR" value={fmt(first.totalMRR)} />
         <KpiCard label={`MRR at M${s.months}`} value={fmt(last.totalMRR)} delta={`${((last.totalMRR / first.totalMRR - 1) * 100).toFixed(0)}%`} up={last.totalMRR > first.totalMRR} />
         <KpiCard label="Cumulative rev" value={fmt(last.cumul)} />
         <KpiCard label={`Subs at M${s.months}`} value={fmtN(last.pSubs + last.eSubs)} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20 }}>
+      <div className="px-grid-sidebar-right">
         <div>
           <Section title="Monthly breakdown">
             <DataTable
@@ -45,11 +45,7 @@ export default function SaasPlanner() {
           </Section>
         </div>
 
-        <div style={{
-          background: T.white, borderRadius: T.radiusLg,
-          border: `1px solid ${T.border}`, padding: '18px 20px',
-          alignSelf: 'start', position: 'sticky', top: 24,
-        }}>
+        <div className="px-side-panel px-side-panel-card">
           <Section title="Personal plan">
             <Input label="Price ($/mo)" type="number" value={s.pPrice} onChange={e => up('pPrice', e.target.value)} />
             <Input label="Starting subs" type="number" value={s.pSubs} onChange={e => up('pSubs', e.target.value)} />

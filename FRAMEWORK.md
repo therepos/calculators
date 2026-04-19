@@ -275,3 +275,106 @@ When you see these, stop adding features and refactor. The cost compounds.
 6. Ship. Add more features following the same pattern.
 
 Don't design the whole system upfront. Start with the primitives above, and extend when a real feature needs something new.
+
+---
+
+## 15. Responsive patterns
+
+Tool-style apps are desktop-first but must not be broken on mobile. The rules below keep responsive behavior predictable and centrally managed.
+
+### Breakpoints
+
+Three breakpoints cover almost everything:
+
+| Breakpoint | Name | What changes |
+|-----------|------|-------------|
+| `900px` | tablet | Sidebar collapses to a slide-in drawer. Sticky right-side input panels move above content and lose sticky behavior. |
+| `640px` | mobile | Two-column card grids stack. Grid rows with many cells reflow (see rank-row pattern). Top bar paddings shrink. KPI strips reduce column count. |
+| `480px` | narrow mobile | Tab rows of 3+ wrap. Inline money inputs shrink. Optional — only where content genuinely fails below 480px. |
+
+Pick a breakpoint by content needs, not device categories. If a grid is still readable at 500px, don't add a rule for it.
+
+### Rule: responsive logic lives in CSS, not JS
+
+Every responsive behavior — stacking, hiding, reflowing, column-count changes — is expressed as a CSS class with `@media` rules, not as inline style conditionals or JS media query hooks. The component attaches a class; the CSS decides what happens at which width.
+
+```jsx
+// Right
+<div className="px-grid-2col">...</div>
+
+// Wrong — conditionals in JS scatter the layout logic
+const isMobile = useMediaQuery('(max-width: 640px)');
+<div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+```
+
+Exception: genuinely dynamic interactive behavior (drawer open/close state, mobile menu toggle) uses React state. Layout reflow does not.
+
+Benefits: one file owns all breakpoints. Changing `640px → 700px` is a CSS edit, not 40 JS edits. No hydration mismatches. No unnecessary re-renders on window resize.
+
+### The reusable class set
+
+Every tool-style app needs roughly these classes. Define once in `styles.css`, use everywhere:
+
+- `px-grid-2col` — two-column card grid, stacks at 640px
+- `px-grid-sidebar-right` — main content + 320px sticky panel, panel moves above at 900px
+- `px-grid-2eq` — two equal columns, stack at 640px
+- `px-kpi-strip-5`, `px-kpi-strip-4`, `px-kpi-auto` — KPI strips with sensible column-count drops
+- `px-topbar`, `px-main` — page-level chrome with mobile paddings
+- `px-engbar` (or similar named bar) — flex-wrap input bars
+- `px-table-scroll` — horizontal scroll wrapper for wide tables, with `min-width` on the inner `<table>` to prevent crushing
+- `px-tab-row` — action tab group with degradation below 480px
+
+Tools don't invent their own grid templates inline. If a new layout need arises, add a new shared class.
+
+### Pattern: wide tables scroll, never crush
+
+Tables with 6+ columns should never compress. Wrap in a container with `overflow-x: auto` and set an explicit `min-width` on the `<table>` — usually 700–1000px depending on column count. This preserves column readability and makes horizontal scroll an obvious, expected behavior below the breakpoint.
+
+```jsx
+<div className="px-table-scroll">
+  <table style={{ width: '100%', minWidth: 900 }}>
+```
+
+```css
+.px-table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+```
+
+### Pattern: complex input grid reflows on mobile
+
+When a grid row has many cells (e.g. rank + 4 number inputs + delete button), don't stack everything into one narrow column — that makes a 6-row form into 42 tiny rows. Instead, reflow:
+
+- The label / primary control spans the full first row
+- The numeric inputs occupy a 4-column row below
+- The remove / action button floats to the top-right of row 1
+
+CSS-grid handles this with `grid-column` and `grid-row` overrides inside the media query. The number inputs remain in one horizontal line (easier to compare), while the select and delete button use the width they actually need.
+
+### Pattern: sidebar becomes drawer
+
+Below 900px, `position: fixed` + `transform: translateX(-100%)` hides the sidebar. An `.open` class removes the transform to slide it in. A separate `.px-sidebar-overlay` absorbs clicks outside the drawer and closes it. Component state manages `open`; CSS handles the animation.
+
+The mobile top bar shows a hamburger button and the active tool name (so the user always knows where they are without opening the drawer).
+
+### Pattern: sticky input panel un-stickies on mobile
+
+When a tool puts inputs in a 320px sticky right-side panel (DCF, Lease, SaaS), below 900px the panel moves above the content (`order: -1`) and loses its sticky positioning. On narrow screens, users fill inputs then scroll to see results — the reversed flow is more natural than fighting for horizontal space.
+
+### Never-do list
+
+- Never use `position: fixed` for elements that would cover more than 30% of a mobile viewport width without a user-triggerable toggle.
+- Never crush table columns to avoid horizontal scroll. Scroll is fine; crushed text is not.
+- Never compute layout dimensions in JS from `window.innerWidth`. CSS media queries are cheaper, more reliable, and SSR-safe.
+- Never add a media query for a breakpoint no content actually needs. Every breakpoint adds complexity and must earn its place.
+- Never let responsive behavior ship unverified. Test at 375px (iPhone SE), 768px (iPad portrait), and desktop before shipping any layout change.
+
+### Minimal viewport checklist
+
+Before shipping any new tool, verify at 375px:
+
+1. No horizontal page scroll (only explicit scroll wrappers)
+2. All interactive elements ≥ 36px tap height
+3. No text smaller than 11px
+4. Primary actions visible without horizontal scroll
+5. Tables scroll cleanly with visible scroll affordance
+6. Sidebar drawer opens / closes smoothly
+7. No content cropped behind the mobile top bar

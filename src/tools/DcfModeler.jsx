@@ -72,7 +72,7 @@ export default function DcfModeler() {
       }
     >
       {/* KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="px-kpi-auto" style={{ marginBottom: 24 }}>
         <KpiCard label="Enterprise value" value={fmt(results.ev)} />
         <KpiCard label="Equity value" value={fmt(results.eqVal)} />
         <KpiCard label="Fair value / share" value={fmt2(results.fairVal)} />
@@ -80,7 +80,7 @@ export default function DcfModeler() {
       </div>
 
       {/* Main two-column: inputs panel + results */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20 }}>
+      <div className="px-grid-sidebar-right">
         {/* ─── Results ─── */}
         <div>
           <Section title="5-year forecast">
@@ -102,8 +102,8 @@ export default function DcfModeler() {
           </Section>
 
           <Section title="Sensitivity — fair value / share">
-            <div style={{ borderRadius: T.radius, overflow: 'hidden', border: `1px solid ${T.border}`, background: T.white }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: mono }}>
+            <div className="px-table-scroll" style={{ border: `1px solid ${T.border}`, background: T.white, borderRadius: T.radius }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: mono, minWidth: 520 }}>
                 <thead>
                   <tr>
                     <th style={sensTh()}>WACC\TGR</th>
@@ -140,11 +140,7 @@ export default function DcfModeler() {
         </div>
 
         {/* ─── Inputs side panel ─── */}
-        <div style={{
-          background: T.white, borderRadius: T.radiusLg,
-          border: `1px solid ${T.border}`, padding: '18px 20px',
-          alignSelf: 'start', position: 'sticky', top: 24,
-        }}>
+        <div className="px-side-panel px-side-panel-card">
           <Section title="Step">
             <Segment value={step} onChange={setStep} options={[
               { value: 'inputs', label: 'Inputs' },

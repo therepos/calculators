@@ -22,18 +22,14 @@ export default function Home({ onNavigate }) {
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
       {/* Top bar — matches ToolShell header style */}
-      <header style={{
-        background: T.white, borderBottom: `1px solid ${T.border}`,
-        padding: '16px 32px', display: 'flex', alignItems: 'center',
-        gap: 16, minHeight: 68,
-      }}>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, letterSpacing: -0.3 }}>Home</h1>
-          <div style={{ fontSize: 12, color: T.text3, marginTop: 3 }}>
+      <header className="px-topbar px-home-topbar">
+        <div className="px-topbar-titles">
+          <h1 className="px-topbar-title">Home</h1>
+          <div className="px-topbar-sub">
             Financial calculators and utilities — fast, private, no login.
           </div>
         </div>
-        <div style={{
+        <div className="px-home-search" style={{
           width: 300, height: 38, borderRadius: T.radiusSm,
           background: T.surface2, border: `1px solid ${T.border}`,
           display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
@@ -46,9 +42,9 @@ export default function Home({ onNavigate }) {
         </div>
       </header>
 
-      <main style={{ padding: '28px 32px 56px' }}>
+      <main className="px-main">
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 22 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 22, flexWrap: 'wrap' }}>
           {cats.map(c => {
             const active = filter === c;
             return (

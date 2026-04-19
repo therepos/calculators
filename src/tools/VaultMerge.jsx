@@ -102,7 +102,7 @@ export default function VaultMerge() {
         border: `1px solid ${T.border}`, padding: '24px 26px',
         maxWidth: 780,
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <div className="px-grid-2eq" style={{ marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: T.text3, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
               Step 1 · Vaultwarden
@@ -119,7 +119,7 @@ export default function VaultMerge() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: T.text2, cursor: 'pointer' }}>
             <input type="checkbox" checked={keepBlank} onChange={e => setKeepBlank(e.target.checked)}
               style={{ width: 16, height: 16, accentColor: T.accent }} />
@@ -132,8 +132,8 @@ export default function VaultMerge() {
 
         {result && (
           <>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 16, marginBottom: 16,
+            <div className="px-kpi-strip-4" style={{
+              marginTop: 16, marginBottom: 16,
             }}>
               <KpiCard label="Vaultwarden" value={fmtN(result.vw)} useMono={false} />
               <KpiCard label="Brave" value={fmtN(result.brave)} useMono={false} />

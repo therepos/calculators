@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Praxis Design System — Global Styles
+   Praxis Design System — Global Styles + Responsive Helpers
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -44,6 +44,12 @@
   --px-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
 
   --px-transition: 0.15s ease;
+
+  --px-sidebar-w: 220px;
+
+  /* Breakpoints are documented here, used in @media rules below.
+     bp-tablet: 900px — sidebar becomes drawer
+     bp-mobile: 640px — grids stack, top bars reflow, rank row reflows */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -75,3 +81,236 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 
 details summary { cursor: pointer; list-style: none; }
 details summary::-webkit-details-marker { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — classes consumed by components
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Shell ─────────────────────────────────────────── */
+.px-sidebar {
+  width: var(--px-sidebar-w);
+  background: var(--px-sidebar);
+  color: var(--px-sidebar-text);
+  position: fixed; top: 0; left: 0; bottom: 0;
+  border-right: 1px solid #1E293B;
+  z-index: 50;
+  display: flex; flex-direction: column;
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+.px-sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.5);
+  z-index: 40;
+}
+.px-content {
+  margin-left: var(--px-sidebar-w);
+  min-height: 100vh;
+}
+.px-mobile-topbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--px-sidebar);
+  color: #fff;
+  position: sticky; top: 0; z-index: 30;
+  border-bottom: 1px solid #1E293B;
+}
+.px-hamburger {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--px-radius-sm);
+  cursor: pointer;
+  color: #fff;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .px-sidebar { transform: translateX(-100%); }
+  .px-sidebar.open { transform: translateX(0); box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  .px-sidebar-overlay.open { display: block; }
+  .px-content { margin-left: 0; }
+  .px-mobile-topbar { display: flex; }
+}
+
+/* Top bar inside each tool ──────────────────────── */
+.px-topbar {
+  background: var(--px-white);
+  border-bottom: 1px solid var(--px-border);
+  padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; min-height: 68px;
+  flex-wrap: wrap;
+}
+.px-topbar-titles { min-width: 0; flex: 1; }
+.px-topbar-title { font-size: 20px; font-weight: 600; color: var(--px-text); letter-spacing: -0.3px; line-height: 1.2; }
+.px-topbar-sub { font-size: 12px; color: var(--px-text3); margin-top: 3px; }
+.px-topbar-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+.px-main {
+  padding: 28px 32px 56px;
+}
+
+@media (max-width: 640px) {
+  .px-topbar { padding: 14px 16px; min-height: 0; }
+  .px-topbar-title { font-size: 17px; }
+  .px-topbar-sub { font-size: 11px; }
+  .px-main { padding: 18px 14px 40px; }
+}
+
+/* Generic two-column card grids (stack on mobile) ─ */
+.px-grid-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.px-grid-sidebar-right {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+}
+.px-grid-sidebar-right > .px-side-panel {
+  align-self: start;
+  position: sticky;
+  top: 24px;
+}
+.px-grid-2eq {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .px-grid-sidebar-right { grid-template-columns: 1fr; }
+  .px-grid-sidebar-right > .px-side-panel { position: static; order: -1; }
+}
+@media (max-width: 640px) {
+  .px-grid-2col { grid-template-columns: 1fr; gap: 14px; }
+  .px-grid-2eq { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* KPI strips ──────────────────────────────────── */
+.px-kpi-strip-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.px-kpi-strip-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.px-kpi-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .px-kpi-strip-5 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .px-kpi-strip-5 { grid-template-columns: repeat(2, 1fr); }
+  .px-kpi-strip-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Engagement name bar ────────────────────────── */
+.px-engbar {
+  background: var(--px-white);
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius);
+  padding: 12px 14px;
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.px-engbar > input { flex: 1; min-width: 200px; }
+@media (max-width: 640px) {
+  .px-engbar { gap: 8px; padding: 10px 12px; }
+  .px-engbar > input { flex: 1 1 100%; }
+  .px-engbar > button { flex: 1 1 auto; }
+}
+
+/* Resources & Hours grid row ─────────────────── */
+.px-rank-row {
+  display: grid;
+  grid-template-columns: 110px repeat(4, 1fr) 22px;
+  gap: 6px;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  /* Reflow: rank on row 1 full width, 4 inputs on row 2 in 4 cols,
+     x-btn floats top-right of row 1. */
+  .px-rank-row {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 4px 6px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--px-border);
+    margin-bottom: 2px;
+  }
+  .px-rank-row > :nth-child(1) { grid-column: 1 / -1; }
+  .px-rank-row > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .px-rank-row > :nth-child(3) { grid-column: 2; grid-row: 2; }
+  .px-rank-row > :nth-child(4) { grid-column: 3; grid-row: 2; }
+  .px-rank-row > :nth-child(5) { grid-column: 4; grid-row: 2; }
+  .px-rank-row > :nth-child(6) { grid-column: 4 / 5; grid-row: 1; justify-self: end; }
+
+  .px-rank-header > :first-child { grid-column: 1 / -1; text-align: left !important; }
+  .px-rank-header > :last-child { display: none; }
+
+  .px-rank-total > :first-child { grid-column: 1 / -1; }
+  .px-rank-total > :last-child { display: none; }
+}
+
+/* Tab row (Set Budget / Run ETC / Clear) ─────── */
+.px-tab-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.6fr;
+  gap: 6px;
+  margin-top: 14px;
+}
+@media (max-width: 480px) {
+  .px-tab-row { grid-template-columns: 1fr 1fr; }
+  .px-tab-row > :last-child { grid-column: 1 / -1; }
+}
+
+/* Scrollable table wrapper ───────────────────── */
+.px-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--px-radius);
+}
+.px-table-scroll > table { min-width: 700px; }
+
+/* Stat row input (right-aligned money field inside StatRow) ─ */
+@media (max-width: 480px) {
+  .px-stat-money { width: 100px !important; }
+}
+
+/* Booking estimate — allow horizontal scroll on mobile */
+.px-booking-grid {
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius);
+  overflow: hidden;
+}
+@media (max-width: 640px) {
+  .px-booking-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .px-booking-grid { min-width: 540px; }
+}
+
+/* Home search shrinks on narrow viewports ───── */
+@media (max-width: 640px) {
+  .px-home-search { width: 100% !important; order: 2; }
+  .px-home-topbar { flex-wrap: wrap; gap: 10px; }
+}
+
+/* Side-panel-as-top-card (for DCF/Lease/SaaS) ─ */
+.px-side-panel-card {
+  background: var(--px-white);
+  border-radius: var(--px-radius-lg);
+  border: 1px solid var(--px-border);
+  padding: 18px 20px;
+}

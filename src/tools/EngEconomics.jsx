@@ -398,11 +398,7 @@ export default function EngEconomics() {
       }
     >
       {/* ─── Engagement name bar ─── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.border}`,
-        borderRadius: T.radius, padding: '12px 14px',
-        display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20,
-      }}>
+      <div className="px-engbar">
         <input
           type="text" value={engName} onChange={e => setEngName(e.target.value)}
           placeholder="Engagement name (e.g. IMDA SGNIC — E-69733072)"
@@ -421,19 +417,14 @@ export default function EngEconomics() {
       </div>
 
       {/* ─── Two-column card grid ─── */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 1fr)',
-        gap: 20, marginBottom: 24,
-      }}>
+      <div className="px-grid-2col" style={{ marginBottom: 24 }}>
         {/* ═════════ LEFT CARD ═════════ */}
         <div style={cardStyle()}>
           <CardTitle title="Resources & hours" sub="Plan budget hours, set budget, then track with ETC and actual hours." />
 
           {/* Header row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '110px repeat(4, 1fr) 22px',
-            gap: 6, padding: '0 0 8px', marginBottom: 6,
+          <div className="px-rank-row px-rank-header" style={{
+            padding: '0 0 8px', marginBottom: 6,
             borderBottom: `1px solid ${T.border}`,
           }}>
             <ColHdr>Rank</ColHdr>
@@ -448,11 +439,7 @@ export default function EngEconomics() {
           {rows.map((r, i) => {
             const total = lk ? (etcOpen ? r.b + r.e : r.b + r.e) : 0;
             return (
-              <div key={i} style={{
-                display: 'grid',
-                gridTemplateColumns: '110px repeat(4, 1fr) 22px',
-                gap: 6, alignItems: 'center', marginBottom: 6,
-              }}>
+              <div key={i} className="px-rank-row" style={{ marginBottom: 6 }}>
                 <select
                   value={r.rank} disabled={lk}
                   onChange={e => updateRow(i, { rank: e.target.value })}
@@ -491,10 +478,8 @@ export default function EngEconomics() {
           })}
 
           {/* Total row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '110px repeat(4, 1fr) 22px',
-            gap: 6, alignItems: 'center', paddingTop: 10, marginTop: 4,
+          <div className="px-rank-row px-rank-total" style={{
+            paddingTop: 10, marginTop: 4,
             borderTop: `1px solid ${T.border}`,
           }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: T.text2 }}>
@@ -519,7 +504,7 @@ export default function EngEconomics() {
           )}
 
           {/* Action tabs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 0.6fr', gap: 6, marginTop: 14 }}>
+          <div className="px-tab-row">
             <button onClick={doSetBudget} disabled={lk}
               style={tabStyle(!lk ? 'active' : 'off')}>
               Set budget
@@ -549,7 +534,7 @@ export default function EngEconomics() {
                 fontSize: 11, fontWeight: 600, color: T.text3,
                 textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10,
               }}>Performance</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <div className="px-grid-2eq" style={{ marginBottom: 8 }}>
                 <MetricCard
                   label="Actual margin"
                   value={calc.aH > 0 ? fa0(Math.round(calc.actMgn)) : '—'}
@@ -563,7 +548,7 @@ export default function EngEconomics() {
                   color={calc.marginDelta == null ? T.text : calc.marginDelta >= 0 ? T.green : T.red}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+              <div className="px-kpi-strip-4" style={{ gap: 6 }}>
                 <SmallKpi label="NSR"  value={fa0(calc.nsr)} />
                 <SmallKpi label="ANSR" value={fa0(Math.round(calc.dispANSR))} />
                 <SmallKpi label="TER"  value={fa0(Math.round(calc.dispANSR + calc.bxpN))} />
@@ -663,11 +648,11 @@ export default function EngEconomics() {
             fontSize: 13, color: T.text3,
           }}>No saved entries yet.</div>
         ) : (
-          <div style={{
+          <div className="px-table-scroll" style={{
             background: T.white, border: `1px solid ${T.border}`,
-            borderRadius: T.radius, overflow: 'hidden', overflowX: 'auto',
+            borderRadius: T.radius,
           }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 780 }}>
               <thead>
                 <tr>
                   {['', 'Date', 'Engagement', 'Status', 'Actual', 'Proj', 'Fee', 'Cost', 'Margin', 'Mgn%', 'NUI'].map((h, i) => (
@@ -816,10 +801,10 @@ function BookingEstimate({ rows, rates, ed, etcOpen }) {
         fontSize: 10, fontWeight: 600, color: T.text3,
         textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
       }}>Booking estimate</div>
+      <div className="px-booking-wrap">
       {Array.from({ length: numTables }).map((_, t) => (
-        <div key={t} style={{
-          border: `1px solid ${T.border}`, borderRadius: T.radius,
-          overflow: 'hidden', marginTop: t > 0 ? 8 : 0,
+        <div key={t} className="px-booking-grid" style={{
+          marginTop: t > 0 ? 8 : 0,
         }}>
           <div style={{
             display: 'grid', gridTemplateColumns: cols,
@@ -855,7 +840,8 @@ function BookingEstimate({ rows, rates, ed, etcOpen }) {
           ))}
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11, color: T.text3 }}>
+      </div>
+      <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 11, color: T.text3, flexWrap: 'wrap' }}>
         <span>Each block = 1 week (40 hrs)</span>
         {ed && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -989,6 +975,7 @@ function MoneyInput({ value, onChange, tone }) {
   return (
     <input
       type="text" inputMode="decimal" placeholder="—"
+      className="px-stat-money"
       value={value}
       onInput={e => { formatMoneyInput(e.target); onChange(e.target.value); }}
       onChange={e => onChange(e.target.value)}

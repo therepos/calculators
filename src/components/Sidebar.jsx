@@ -1,68 +1,70 @@
 import { T, TOOLS, HomeIcon } from '../shared';
 
-export default function Sidebar({ active, onNavigate }) {
+export default function Sidebar({ active, onNavigate, open, onClose }) {
+  const handleNav = id => {
+    onNavigate(id);
+    if (onClose) onClose();
+  };
+
   return (
-    <aside style={{
-      width: T.sidebarWidth, background: T.sidebar, color: T.sidebarText,
-      display: 'flex', flexDirection: 'column',
-      position: 'fixed', top: 0, left: 0, bottom: 0,
-      borderRight: `1px solid ${T.sidebarBorder}`,
-      zIndex: 50,
-    }}>
-      {/* Brand */}
-      <div style={{
-        padding: '22px 20px 20px',
-        borderBottom: `1px solid ${T.sidebarBorder}`,
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
+    <>
+      <div className={`px-sidebar-overlay${open ? ' open' : ''}`} onClick={onClose} />
+      <aside className={`px-sidebar${open ? ' open' : ''}`}>
+        {/* Brand */}
         <div style={{
-          width: 32, height: 32, borderRadius: 8, background: T.accent,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: 15, fontWeight: 700, letterSpacing: -0.5,
-        }}>P</div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: -0.2, lineHeight: 1.1 }}>Praxis</div>
-          <div style={{ fontSize: 11, color: T.sidebarTextMuted, marginTop: 2 }}>Quick tools</div>
+          padding: '22px 20px 20px',
+          borderBottom: `1px solid ${T.sidebarBorder}`,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8, background: T.accent,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 15, fontWeight: 700, letterSpacing: -0.5,
+          }}>P</div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: -0.2, lineHeight: 1.1 }}>Praxis</div>
+            <div style={{ fontSize: 11, color: T.sidebarTextMuted, marginTop: 2 }}>Quick tools</div>
+          </div>
         </div>
-      </div>
 
-      {/* Home */}
-      <div style={{ padding: '14px 12px 6px' }}>
-        <NavItem
-          icon={HomeIcon}
-          label="Home"
-          active={active === 'home'}
-          onClick={() => onNavigate('home')}
-        />
-      </div>
-
-      {/* Tools section */}
-      <div style={{
-        padding: '10px 20px 6px', fontSize: 10, fontWeight: 600,
-        color: T.sidebarTextMuted, textTransform: 'uppercase', letterSpacing: 0.6,
-      }}>Tools</div>
-      <nav style={{ padding: '0 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {TOOLS.map(t => (
+        {/* Home */}
+        <div style={{ padding: '14px 12px 6px' }}>
           <NavItem
-            key={t.id}
-            icon={t.icon}
-            label={t.title}
-            active={active === t.id}
-            onClick={() => onNavigate(t.id)}
+            icon={HomeIcon}
+            label="Home"
+            active={active === 'home'}
+            onClick={() => handleNav('home')}
           />
-        ))}
-      </nav>
+        </div>
 
-      {/* Footer */}
-      <div style={{
-        padding: '14px 20px', borderTop: `1px solid ${T.sidebarBorder}`,
-        fontSize: 11, color: T.sidebarTextMuted, display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <span>v1.0</span>
-        <span style={{ fontFamily: T.mono }}>MIT</span>
-      </div>
-    </aside>
+        {/* Tools section */}
+        <div style={{
+          padding: '10px 20px 6px', fontSize: 10, fontWeight: 600,
+          color: T.sidebarTextMuted, textTransform: 'uppercase', letterSpacing: 0.6,
+        }}>Tools</div>
+        <nav style={{ padding: '0 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+          {TOOLS.map(t => (
+            <NavItem
+              key={t.id}
+              icon={t.icon}
+              label={t.title}
+              active={active === t.id}
+              onClick={() => handleNav(t.id)}
+            />
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div style={{
+          padding: '14px 20px', borderTop: `1px solid ${T.sidebarBorder}`,
+          fontSize: 11, color: T.sidebarTextMuted, display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span>v1.0</span>
+          <span style={{ fontFamily: T.mono }}>MIT</span>
+        </div>
+      </aside>
+    </>
   );
 }
 

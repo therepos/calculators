@@ -48,14 +48,14 @@ export default function LeaseCalc() {
       subtitle="IFRS 16 and ASC 842 schedules"
       actions={<NavBtn label="Export CSV" onClick={() => {}} />}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="px-kpi-auto" style={{ marginBottom: 24 }}>
         <KpiCard label="PV of liability" value={fmt2(results.pvLiab)} />
         <KpiCard label="ROU asset" value={fmt2(results.rouAsset)} />
         <KpiCard label="Monthly dep." value={fmt2(results.monthlyDep)} />
         <KpiCard label="Total payments" value={fmt(results.totalPayments)} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 20 }}>
+      <div className="px-grid-sidebar-right">
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{
@@ -82,11 +82,7 @@ export default function LeaseCalc() {
           )}
         </div>
 
-        <div style={{
-          background: T.white, borderRadius: T.radiusLg,
-          border: `1px solid ${T.border}`, padding: '18px 20px',
-          alignSelf: 'start', position: 'sticky', top: 24,
-        }}>
+        <div className="px-side-panel px-side-panel-card">
           <Section title="Lease terms">
             <Input label="Term (months)" type="number" value={lease.term} onChange={e => up('term', e.target.value)} />
             <Input label="Payment ($)" type="number" value={lease.payment} onChange={e => up('payment', e.target.value)} />
