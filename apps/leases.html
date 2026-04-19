@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lease Accounting Calculator</title>
+<meta name="description" content="IFRS 16 and ASC 842 lease liability and right-of-use asset schedules.">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --surface2: #f0ece1;
+  --border: #d8d0be;
+  --border2: #e8e2d4;
+  --ifrs: #1a4a3a;
+  --ifrs-light: #e8f4ef;
+  --ifrs-mid: #4a9b7f;
+  --asc: #2c1f4a;
+  --asc-light: #ede8f5;
+  --asc-mid: #7c5fbf;
+  --diff: #8b3a1a;
+  --diff-light: #fdf0ea;
+  --text: #1a1812;
+  --muted: #7a7060;
+  --ink: #2d2820;
+  --gold: #c9a84c;
+  --red: #c0392b;
+  --shadow: 0 2px 20px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+}
+
+/* Grain texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+.header {
+  background: var(--ink);
+  color: #f5f2eb;
+  padding: 28px 40px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--gold);
+}
+
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-sub {
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.std-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.std-badge {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.std-badge.ifrs { background: var(--ifrs); color: #e8f4ef; }
+.std-badge.asc { background: var(--asc); color: #ede8f5; }
+
+.main {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: calc(100vh - 90px);
+}
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 90px);
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border2);
+  padding: 20px 24px;
+}
+
+.sidebar-section-title {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+/* Lease tabs */
+.lease-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.lease-tab {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  cursor: pointer;
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.lease-tab.active {
+  background: var(--ink);
+  color: #f5f2eb;
+  border-color: var(--ink);
+}
+
+.btn-add-lease {
+  padding: 5px 10px;
+  border: 1px dashed var(--gold);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gold);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.15s;
+}
+.btn-add-lease:hover { background: #fdf8ec; }
+
+.btn-remove-lease {
+  display: block;
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #f0c0b0;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  cursor: pointer;
+  background: #fff5f2;
+  color: var(--red);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+/* Form fields */
+.field-group {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.field-label span:first-child {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.field-val {
+  font-size: 0.8rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  background: var(--surface2);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"]:focus, input[type="number"]:focus, select:focus {
+  border-color: var(--ink);
+}
+
+select { cursor: pointer; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Modification box */
+.mod-box {
+  background: var(--diff-light);
+  border: 1px solid #e0c4b4;
+  border-radius: 6px;
+  padding: 14px;
+  margin-top: 8px;
+}
+.mod-title {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--diff);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.toggle-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  left: 3px; top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--ink); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+/* CONTENT area */
+.content {
+  padding: 28px 32px;
+  overflow-x: auto;
+}
+
+/* Standard switcher */
+.std-switcher {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+
+.std-btn {
+  padding: 8px 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: none;
+  background: var(--surface2);
+  color: var(--muted);
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.std-btn.active-ifrs { background: var(--ifrs); color: white; }
+.std-btn.active-asc { background: var(--asc); color: white; }
+.std-btn.active-diff { background: var(--diff); color: white; }
+
+/* Summary KPIs */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.kpi-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.kpi-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.kpi-sub {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.kpi-ifrs { border-top: 3px solid var(--ifrs-mid); }
+.kpi-asc { border-top: 3px solid var(--asc-mid); }
+.kpi-diff { border-top: 3px solid var(--gold); }
+
+/* Charts row */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.chart-heading {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Table */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.table-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.table-title {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.export-btn {
+  padding: 6px 14px;
+  background: var(--ink);
+  color: #f5f2eb;
+  border: none;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition: opacity 0.15s;
+}
+.export-btn:hover { opacity: 0.8; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  min-width: 800px;
+}
+
+thead tr {
+  background: var(--surface2);
+}
+th {
+  padding: 9px 12px;
+  text-align: right;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+th:first-child { text-align: left; }
+
+td {
+  padding: 8px 12px;
+  text-align: right;
+  border-bottom: 1px solid var(--border2);
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--ink);
+  white-space: nowrap;
+}
+td:first-child { text-align: left; color: var(--muted); font-size: 0.7rem; }
+
+tr:hover td { background: var(--surface2); }
+
+.col-ifrs { color: var(--ifrs) !important; }
+.col-asc { color: var(--asc) !important; }
+.col-diff-pos { color: var(--ifrs) !important; }
+.col-diff-neg { color: var(--red) !important; }
+
+.mod-row td { background: #fff8f5 !important; }
+.mod-row td:first-child { color: var(--diff) !important; font-style: italic; }
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  align-items: center;
+}
+.leg-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.diff-note {
+  background: var(--diff-light);
+  border: 1px solid #e0c4b4;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.68rem;
+  color: var(--diff);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.no-lease-msg {
+  text-align: center;
+  padding: 60px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+  .sidebar { max-height: none; position: relative; }
+}
+
+:root {
+  --nav-bg:         rgba(245,242,235,0.96);
+  --nav-border:     rgba(216,208,190,0.9);
+  --nav-drawer-bg:  #ffffff;
+  --nav-text:       #1a1812;
+  --nav-muted:      #7a7060;
+  --nav-accent:     #c9a84c;
+  --nav-hover:      #f0ece1;
+  --nav-current-bg: rgba(201,168,76,0.08);
+  --nav-font:       'IBM Plex Mono', monospace;
+}
+</style>
+<script src="../shared/nav.js"></script>
+</head>
+<body>
+<script>buildNav("lease-accounting-dashboard.html")</script>
+
+<div class="header">
+  <div>
+    <div class="header-title">Lease Accounting Calculator</div>
+    <div class="header-sub">IFRS 16 &amp; ASC 842 — Dynamic Schedule Builder</div>
+  </div>
+  <div class="std-badges">
+    <span class="std-badge ifrs">IFRS 16</span>
+    <span class="std-badge asc">ASC 842</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Lease selector -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Leases</div>
+      <div class="lease-tabs" id="lease-tabs"></div>
+      <button class="btn-add-lease" onclick="addLease()">+ Add Lease</button>
+    </div>
+
+    <!-- Lease inputs -->
+    <div class="sidebar-section" id="lease-inputs">
+      <div class="sidebar-section-title">Lease Parameters</div>
+
+      <div class="field-group">
+        <div class="field-label"><span>Lease Name</span></div>
+        <input type="text" id="in-name" placeholder="e.g. Office HQ" oninput="updateLeaseName(this.value)">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label"><span>Lease Classification</span></div>
+        <select id="in-type" onchange="updateState('type', this.value); recompute()">
+          <option value="operating">Operating Lease</option>
+          <option value="finance">Finance Lease</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label"><span>Payment Frequency</span></div>
+        <select id="in-freq" onchange="updateState('freq', this.value); recompute()">
+          <option value="12">Monthly</option>
+          <option value="4">Quarterly</option>
+          <option value="2">Semi-Annual</option>
+          <option value="1">Annual</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label"><span>Payment Timing</span></div>
+        <select id="in-timing" onchange="updateState('timing', this.value); recompute()">
+          <option value="end">End of Period</option>
+          <option value="begin">Beginning of Period</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Lease Term (months)</span>
+          <span class="field-val" id="lbl-term">60</span>
+        </div>
+        <input type="range" id="in-term" min="1" max="240" value="60" step="1"
+          oninput="updateState('term', +this.value); document.getElementById('lbl-term').textContent=this.value; recompute()">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Lease Payment ($)</span>
+          <span class="field-val" id="lbl-payment">5,000</span>
+        </div>
+        <input type="range" id="in-payment" min="100" max="100000" value="5000" step="100"
+          oninput="updateState('payment', +this.value); document.getElementById('lbl-payment').textContent=Number(this.value).toLocaleString(); recompute()">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Discount Rate (IBR) % p.a.</span>
+          <span class="field-val" id="lbl-rate">5.0%</span>
+        </div>
+        <input type="range" id="in-rate" min="0.1" max="20" value="5" step="0.1"
+          oninput="updateState('rate', +this.value); document.getElementById('lbl-rate').textContent=parseFloat(this.value).toFixed(1)+'%'; recompute()">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Initial Direct Costs ($)</span>
+          <span class="field-val" id="lbl-idc">0</span>
+        </div>
+        <input type="range" id="in-idc" min="0" max="50000" value="0" step="500"
+          oninput="updateState('idc', +this.value); document.getElementById('lbl-idc').textContent=Number(this.value).toLocaleString(); recompute()">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Lease Incentives ($)</span>
+          <span class="field-val" id="lbl-incentive">0</span>
+        </div>
+        <input type="range" id="in-incentive" min="0" max="50000" value="0" step="500"
+          oninput="updateState('incentive', +this.value); document.getElementById('lbl-incentive').textContent=Number(this.value).toLocaleString(); recompute()">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">
+          <span>Residual Value Guarantee ($)</span>
+          <span class="field-val" id="lbl-rvg">0</span>
+        </div>
+        <input type="range" id="in-rvg" min="0" max="100000" value="0" step="1000"
+          oninput="updateState('rvg', +this.value); document.getElementById('lbl-rvg').textContent=Number(this.value).toLocaleString(); recompute()">
+      </div>
+
+      <button class="btn-remove-lease" onclick="removeLease()">✕ Remove This Lease</button>
+    </div>
+
+    <!-- Modification -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Modification / Reassessment</div>
+      <div class="toggle-row">
+        <span class="toggle-label">Enable Modification</span>
+        <label class="toggle">
+          <input type="checkbox" id="mod-toggle" onchange="toggleMod(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="mod-box" id="mod-box" style="display:none">
+        <div class="mod-title">Modification Event</div>
+        <div class="field-group">
+          <div class="field-label">
+            <span>At Month #</span>
+            <span class="field-val" id="lbl-mod-at">24</span>
+          </div>
+          <input type="range" id="in-mod-at" min="1" max="240" value="24" step="1"
+            oninput="updateState('modAt', +this.value); document.getElementById('lbl-mod-at').textContent=this.value; recompute()">
+        </div>
+        <div class="field-group">
+          <div class="field-label">
+            <span>New Payment ($)</span>
+            <span class="field-val" id="lbl-mod-payment">6,000</span>
+          </div>
+          <input type="range" id="in-mod-payment" min="100" max="100000" value="6000" step="100"
+            oninput="updateState('modPayment', +this.value); document.getElementById('lbl-mod-payment').textContent=Number(this.value).toLocaleString(); recompute()">
+        </div>
+        <div class="field-group">
+          <div class="field-label">
+            <span>New Term Extension (months)</span>
+            <span class="field-val" id="lbl-mod-term">0</span>
+          </div>
+          <input type="range" id="in-mod-term" min="0" max="120" value="0" step="1"
+            oninput="updateState('modTerm', +this.value); document.getElementById('lbl-mod-term').textContent=this.value; recompute()">
+        </div>
+        <div class="field-group">
+          <div class="field-label">
+            <span>New Rate (IBR) % p.a.</span>
+            <span class="field-val" id="lbl-mod-rate">5.0%</span>
+          </div>
+          <input type="range" id="in-mod-rate" min="0.1" max="20" value="5" step="0.1"
+            oninput="updateState('modRate', +this.value); document.getElementById('lbl-mod-rate').textContent=parseFloat(this.value).toFixed(1)+'%'; recompute()">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Standard switcher -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+      <div class="std-switcher">
+        <button class="std-btn active-ifrs" id="btn-ifrs" onclick="setView('ifrs')">IFRS 16</button>
+        <button class="std-btn" id="btn-asc" onclick="setView('asc')">ASC 842</button>
+        <button class="std-btn" id="btn-diff" onclick="setView('diff')">Differences</button>
+      </div>
+      <div style="font-size:0.65rem; color:var(--muted)">
+        Lease: <span id="active-lease-name" style="color:var(--ink); font-weight:600">—</span>
+      </div>
+    </div>
+
+    <div id="diff-note" class="diff-note" style="display:none">
+      <strong>Key differences shown:</strong> Under IFRS 16, all leases are finance-type on the balance sheet (single model). Under ASC 842, operating leases use straight-line P&amp;L expense with a single lease cost line, while finance leases mirror IFRS 16. The table highlights where P&amp;L and balance sheet diverge.
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-heading">
+          <span>Lease Liability Balance</span>
+          <div class="legend" id="chart1-legend"></div>
+        </div>
+        <canvas id="chart-liability" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-heading">
+          <span>P&amp;L Charge per Period</span>
+          <div class="legend" id="chart2-legend"></div>
+        </div>
+        <canvas id="chart-pl" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-heading">
+        <div class="table-title" id="table-title">Amortisation Schedule</div>
+        <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+      </div>
+      <div id="table-wrap"></div>
+    </div>
+
+    <!-- ROU Table -->
+    <div class="table-card">
+      <div class="table-heading">
+        <div class="table-title">ROU Asset Schedule</div>
+      </div>
+      <div id="rou-table-wrap"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────
+let leases = [];
+let activeLeaseIdx = 0;
+let currentView = 'ifrs';
+let liabilityChart, plChart;
+
+function defaultLease(n) {
+  return {
+    name: 'Lease ' + n,
+    type: 'operating',
+    freq: 12,
+    timing: 'end',
+    term: 60,
+    payment: 5000,
+    rate: 5,
+    idc: 0,
+    incentive: 0,
+    rvg: 0,
+    mod: false,
+    modAt: 24,
+    modPayment: 6000,
+    modTerm: 0,
+    modRate: 5,
+  };
+}
+
+function updateState(key, val) {
+  leases[activeLeaseIdx][key] = val;
+}
+
+function updateLeaseName(val) {
+  leases[activeLeaseIdx].name = val || 'Lease';
+  renderLeaseTabs();
+  document.getElementById('active-lease-name').textContent = leases[activeLeaseIdx].name;
+}
+
+// ─── COMPUTE ─────────────────────────────────────────────────────────
+
+function periodicRate(annualRate, freq) {
+  return annualRate / 100 / freq;
+}
+
+function computePV(payment, rate, nPeriods, timing) {
+  if (rate === 0) return payment * nPeriods;
+  if (timing === 'begin') {
+    // annuity due
+    return payment * (1 - Math.pow(1 + rate, -nPeriods)) / rate * (1 + rate);
+  }
+  return payment * (1 - Math.pow(1 + rate, -nPeriods)) / rate;
+}
+
+function buildSchedule(lease) {
+  const { freq, timing, term, payment, rate, idc, incentive, rvg, mod, modAt, modPayment, modRate, modTerm } = lease;
+  const r = periodicRate(rate, freq);
+  const nPeriods = term; // periods = months; payments per year = freq
+  const payPerPeriod = Math.round(freq); // payments per year
+  // We'll work month by month, payment every (12/freq) months
+  const payInterval = Math.round(12 / freq);
+
+  // Initial PV
+  const nPayments = Math.ceil(term / payInterval);
+  const pvRvg = rvg > 0 ? rvg / Math.pow(1 + r, nPayments) : 0;
+  let initLiab = computePV(payment, r, nPayments, timing) + pvRvg;
+  const rouCost = initLiab + idc - incentive;
+
+  const rows = [];
+  let liab = initLiab;
+  let rouAsset = rouCost;
+  let rouDepPerPeriod = rouCost / nPayments; // straight-line over payment periods
+  let cumulInterest = 0;
+  let cumulPayment = 0;
+  let cumulDep = 0;
+  let isModified = false;
+  let modLiab = 0;
+  let modRou = 0;
+  let modLabel = '';
+  // track period count for payments
+  let periodCount = 0; // which payment number
+  let modPaymentVal = modPayment;
+  let modRateVal = modRate;
+  let remainingPayments = nPayments;
+  let depPerPeriod = rouDepPerPeriod;
+
+  for (let m = 1; m <= term + (mod ? modTerm : 0); m++) {
+    const isPayMonth = (m % payInterval === 0) || (timing === 'begin' && m % payInterval === 1);
+    const isModMonth = mod && m === modAt;
+
+    if (isModMonth && !isModified) {
+      isModified = true;
+      // Remeasure: remaining payments after mod
+      const remainingOrig = Math.ceil((term - m) / payInterval);
+      const extPay = Math.ceil(modTerm / payInterval);
+      const totalRemain = remainingOrig + extPay;
+      const newR = periodicRate(modRateVal, freq);
+      const newPV = computePV(modPaymentVal, newR, totalRemain, timing);
+      const diff = newPV - liab;
+      rouAsset = rouAsset + diff; // adjust ROU by remeasurement gain/loss
+      depPerPeriod = rouAsset / totalRemain;
+      liab = newPV;
+      modLiab = liab;
+      modRou = rouAsset;
+      remainingPayments = totalRemain;
+      modLabel = `[MOD]`;
+    }
+
+    const curR = isModified ? periodicRate(modRateVal, freq) : r;
+    const curPayment = isModified ? modPaymentVal : payment;
+
+    let interestExp = 0;
+    let principalRep = 0;
+    let pmtAmt = 0;
+
+    if (timing === 'begin') {
+      // payment at start: pay first, then accrue interest
+      if (m % payInterval === 1) {
+        pmtAmt = curPayment;
+        liab -= pmtAmt;
+        interestExp = liab * curR;
+        liab += interestExp;
+      } else {
+        interestExp = liab * curR;
+        liab += interestExp;
+      }
+    } else {
+      interestExp = liab * curR;
+      liab += interestExp;
+      if (m % payInterval === 0) {
+        pmtAmt = curPayment;
+        liab -= pmtAmt;
+      }
+    }
+
+    // Add RVG at end
+    if (m === term + (mod ? modTerm : 0) && rvg > 0) {
+      liab -= rvg;
+    }
+
+    cumulInterest += interestExp;
+    cumulPayment += pmtAmt;
+
+    // ROU depreciation
+    let depExp = depPerPeriod;
+    rouAsset -= depExp;
+    if (rouAsset < 0) { depExp += rouAsset; rouAsset = 0; }
+    cumulDep += depExp;
+
+    rows.push({
+      month: m,
+      isModMonth,
+      openLiab: liab + principalRep + pmtAmt - interestExp + (timing === 'begin' && m % payInterval === 1 ? pmtAmt : 0),
+      interestExp: Math.max(0, interestExp),
+      payment: pmtAmt,
+      closeLiab: Math.max(0, liab),
+      rouOpen: rouAsset + depExp,
+      depExp,
+      rouClose: Math.max(0, rouAsset),
+      cumulInterest,
+      cumulPayment,
+      cumulDep,
+      modLabel: isModMonth ? modLabel : '',
+    });
+  }
+
+  // Recalc open liab properly
+  for (let i = 0; i < rows.length; i++) {
+    rows[i].openLiab = i === 0 ? initLiab : rows[i-1].closeLiab;
+  }
+
+  return {
+    rows,
+    initLiab,
+    rouCost,
+    totalInterest: cumulInterest,
+    totalPayments: cumulPayment,
+    totalDep: cumulDep,
+  };
+}
+
+// IFRS 16: all leases = finance model (interest + dep separate)
+function ifrs16(lease) {
+  const s = buildSchedule(lease);
+  return {
+    ...s,
+    type: 'ifrs',
+    plRows: s.rows.map(r => ({
+      ...r,
+      plCharge: r.interestExp + r.depExp,
+      plLabel: 'Interest + Depreciation',
+    })),
+  };
+}
+
+// ASC 842: operating = straight-line; finance = same as IFRS
+function asc842(lease) {
+  const s = buildSchedule(lease);
+  if (lease.type === 'finance') {
+    return {
+      ...s,
+      type: 'asc-finance',
+      plRows: s.rows.map(r => ({
+        ...r,
+        plCharge: r.interestExp + r.depExp,
+        plLabel: 'Interest + Amortization',
+      })),
+    };
+  }
+  // Operating: single lease cost = straight-line of total payments
+  const { freq, term, payment, mod, modAt, modPayment, modTerm } = lease;
+  const payInterval = Math.round(12 / freq);
+  const nPayments = Math.ceil(term / payInterval);
+  const totalPmts = nPayments * payment + (mod ? Math.ceil(modTerm / payInterval) * modPayment : 0);
+  const totalMonths = term + (mod ? modTerm : 0);
+  const slPerMonth = totalPmts / totalMonths;
+
+  return {
+    ...s,
+    type: 'asc-operating',
+    plRows: s.rows.map(r => ({
+      ...r,
+      plCharge: slPerMonth,
+      plLabel: 'Straight-line Lease Cost',
+    })),
+  };
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────
+
+const fmt = (n) => {
+  if (isNaN(n)) return '—';
+  return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+function setView(v) {
+  currentView = v;
+  ['ifrs','asc','diff'].forEach(x => {
+    document.getElementById('btn-' + x).className = 'std-btn';
+  });
+  document.getElementById('btn-' + v).className = 'std-btn active-' + v;
+  document.getElementById('diff-note').style.display = v === 'diff' ? 'block' : 'none';
+  recompute();
+}
+
+function recompute() {
+  if (leases.length === 0) {
+    document.getElementById('kpi-row').innerHTML = '';
+    document.getElementById('table-wrap').innerHTML = '<div class="no-lease-msg">No leases added yet.</div>';
+    document.getElementById('rou-table-wrap').innerHTML = '';
+    return;
+  }
+
+  const lease = leases[activeLeaseIdx];
+  const ifrsData = ifrs16(lease);
+  const ascData = asc842(lease);
+
+  document.getElementById('active-lease-name').textContent = lease.name;
+  renderKPIs(ifrsData, ascData, lease);
+  renderCharts(ifrsData, ascData);
+  renderTable(ifrsData, ascData, lease);
+  renderROUTable(ifrsData, ascData, lease);
+}
+
+function renderKPIs(ifrs, asc, lease) {
+  const totalMonths = lease.term + (lease.mod ? lease.modTerm : 0);
+  const payInterval = Math.round(12 / lease.freq);
+
+  const kpiRow = document.getElementById('kpi-row');
+  if (currentView === 'diff') {
+    kpiRow.innerHTML = `
+      <div class="kpi-card kpi-ifrs">
+        <div class="kpi-label">IFRS 16 — Initial Liability</div>
+        <div class="kpi-value">${fmt(ifrs.initLiab)}</div>
+        <div class="kpi-sub">= ASC 842 liability</div>
+      </div>
+      <div class="kpi-card kpi-asc">
+        <div class="kpi-label">ASC 842 — Total Lease Cost</div>
+        <div class="kpi-value">${fmt(asc.plRows.reduce((s,r) => s + r.plCharge, 0))}</div>
+        <div class="kpi-sub">${lease.type === 'operating' ? 'Straight-line' : 'Interest + Amort.'}</div>
+      </div>
+      <div class="kpi-card kpi-diff">
+        <div class="kpi-label">IFRS 16 — Total P&L Charge</div>
+        <div class="kpi-value">${fmt(ifrs.totalInterest + ifrs.totalDep)}</div>
+        <div class="kpi-sub">Front-loaded (higher early)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">P&L Difference (Total)</div>
+        <div class="kpi-value">${fmt(Math.abs((ifrs.totalInterest + ifrs.totalDep) - asc.plRows.reduce((s,r) => s + r.plCharge, 0)))}</div>
+        <div class="kpi-sub">IFRS vs ASC (total lease life)</div>
+      </div>
+    `;
+    return;
+  }
+
+  const data = currentView === 'ifrs' ? ifrs : asc;
+  const color = currentView === 'ifrs' ? 'ifrs' : 'asc';
+
+  kpiRow.innerHTML = `
+    <div class="kpi-card kpi-${color}">
+      <div class="kpi-label">Initial Lease Liability</div>
+      <div class="kpi-value">${fmt(data.initLiab)}</div>
+      <div class="kpi-sub">PV of future payments</div>
+    </div>
+    <div class="kpi-card kpi-${color}">
+      <div class="kpi-label">ROU Asset (Initial)</div>
+      <div class="kpi-value">${fmt(data.rouCost)}</div>
+      <div class="kpi-sub">Liability + IDC − Incentives</div>
+    </div>
+    <div class="kpi-card kpi-${color}">
+      <div class="kpi-label">Total Interest / Finance Cost</div>
+      <div class="kpi-value">${fmt(data.totalInterest)}</div>
+      <div class="kpi-sub">Over ${totalMonths} months</div>
+    </div>
+    <div class="kpi-card kpi-${color}">
+      <div class="kpi-label">Total Dep / Amortisation</div>
+      <div class="kpi-value">${fmt(data.totalDep)}</div>
+      <div class="kpi-sub">ROU asset written off</div>
+    </div>
+  `;
+}
+
+function renderCharts(ifrs, asc) {
+  const labels = ifrs.rows.map(r => 'M' + r.month);
+  const ifrsColor = '#4a9b7f';
+  const ascColor = '#7c5fbf';
+
+  if (liabilityChart) liabilityChart.destroy();
+  if (plChart) plChart.destroy();
+
+  const chartOpts = (yFmt) => ({
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#2d2820',
+        borderColor: '#c9a84c',
+        borderWidth: 1,
+        titleColor: '#c9a84c',
+        bodyColor: '#f5f2eb',
+        padding: 10,
+        titleFont: { family: 'IBM Plex Mono', size: 10 },
+        bodyFont: { family: 'IBM Plex Mono', size: 11 },
+        callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(ctx.raw) }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { color: '#7a7060', font: { family: 'IBM Plex Mono', size: 9 }, maxTicksLimit: 12 },
+        border: { color: 'transparent' }
+      },
+      y: {
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { color: '#7a7060', font: { family: 'IBM Plex Mono', size: 9 },
+          callback: v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v)
+        },
+        border: { color: 'transparent' }
+      }
+    }
+  });
+
+  // Liability chart
+  const liabDatasets = [];
+  if (currentView !== 'asc') {
+    liabDatasets.push({
+      label: 'IFRS 16',
+      data: ifrs.rows.map(r => r.closeLiab),
+      borderColor: ifrsColor,
+      backgroundColor: 'rgba(74,155,127,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 0,
+      borderWidth: 2,
+    });
+  }
+  if (currentView !== 'ifrs') {
+    liabDatasets.push({
+      label: 'ASC 842',
+      data: asc.rows.map(r => r.closeLiab),
+      borderColor: ascColor,
+      backgroundColor: 'rgba(124,95,191,0.1)',
+      fill: currentView === 'asc',
+      tension: 0.3,
+      pointRadius: 0,
+      borderWidth: 2,
+      borderDash: currentView === 'diff' ? [5,3] : [],
+    });
+  }
+
+  liabilityChart = new Chart(document.getElementById('chart-liability'), {
+    type: 'line',
+    data: { labels, datasets: liabDatasets },
+    options: chartOpts()
+  });
+
+  // P&L chart
+  const plDatasets = [];
+  if (currentView !== 'asc') {
+    plDatasets.push({
+      label: 'IFRS 16 P&L',
+      data: ifrs.plRows.map(r => r.plCharge),
+      borderColor: ifrsColor,
+      backgroundColor: 'rgba(74,155,127,0.15)',
+      fill: true,
+      tension: 0.2,
+      pointRadius: 0,
+      borderWidth: 2,
+    });
+  }
+  if (currentView !== 'ifrs') {
+    plDatasets.push({
+      label: 'ASC 842 P&L',
+      data: asc.plRows.map(r => r.plCharge),
+      borderColor: ascColor,
+      backgroundColor: 'rgba(124,95,191,0.15)',
+      fill: currentView === 'asc',
+      tension: 0.2,
+      pointRadius: 0,
+      borderWidth: 2,
+      borderDash: currentView === 'diff' ? [5,3] : [],
+    });
+  }
+
+  plChart = new Chart(document.getElementById('chart-pl'), {
+    type: 'line',
+    data: { labels, datasets: plDatasets },
+    options: chartOpts()
+  });
+
+  // Update legends
+  const l1 = document.getElementById('chart1-legend');
+  const l2 = document.getElementById('chart2-legend');
+  const legendHTML = () => {
+    let h = '';
+    if (currentView !== 'asc') h += `<span><span class="leg-dot" style="background:${ifrsColor}"></span>IFRS 16</span>`;
+    if (currentView !== 'ifrs') h += `<span><span class="leg-dot" style="background:${ascColor}"></span>ASC 842</span>`;
+    return h;
+  };
+  l1.innerHTML = l2.innerHTML = legendHTML();
+}
+
+function renderTable(ifrs, asc, lease) {
+  const wrap = document.getElementById('table-wrap');
+  const showIFRS = currentView !== 'asc';
+  const showASC = currentView !== 'ifrs';
+
+  let headers = `<th>Month</th>`;
+  if (showIFRS) headers += `<th class="col-ifrs">Open Liab</th><th class="col-ifrs">Interest</th><th class="col-ifrs">Payment</th><th class="col-ifrs">Close Liab</th>`;
+  if (showASC)  headers += `<th class="col-asc">Open Liab</th><th class="col-asc">Interest</th><th class="col-asc">Payment</th><th class="col-asc">Close Liab</th>`;
+  if (currentView === 'diff') headers += `<th>Liab Δ</th>`;
+  if (showIFRS) headers += `<th class="col-ifrs">IFRS P&L</th>`;
+  if (showASC)  headers += `<th class="col-asc">ASC P&L</th>`;
+  if (currentView === 'diff') headers += `<th>P&L Δ</th>`;
+
+  let rows = '';
+  for (let i = 0; i < ifrs.rows.length; i++) {
+    const ir = ifrs.rows[i];
+    const ar = asc.rows[i];
+    const ipl = ifrs.plRows[i].plCharge;
+    const apl = asc.plRows[i].plCharge;
+    const liabDiff = ir.closeLiab - ar.closeLiab;
+    const plDiff = ipl - apl;
+    const rowCls = ir.isModMonth ? 'mod-row' : '';
+
+    let tds = `<td>${ir.isModMonth ? '⚡ M' : 'M'}${ir.month}</td>`;
+    if (showIFRS) tds += `<td>${fmt(ir.openLiab)}</td><td class="col-ifrs">${fmt(ir.interestExp)}</td><td>${fmt(ir.payment)}</td><td class="col-ifrs">${fmt(ir.closeLiab)}</td>`;
+    if (showASC)  tds += `<td>${fmt(ar.openLiab)}</td><td class="col-asc">${fmt(ar.interestExp)}</td><td>${fmt(ar.payment)}</td><td class="col-asc">${fmt(ar.closeLiab)}</td>`;
+    if (currentView === 'diff') {
+      const dc = Math.abs(liabDiff) < 1 ? '' : liabDiff > 0 ? 'col-diff-pos' : 'col-diff-neg';
+      tds += `<td class="${dc}">${liabDiff >= 0 ? '+' : ''}${fmt(liabDiff)}</td>`;
+    }
+    if (showIFRS) tds += `<td class="col-ifrs">${fmt(ipl)}</td>`;
+    if (showASC)  tds += `<td class="col-asc">${fmt(apl)}</td>`;
+    if (currentView === 'diff') {
+      const dc2 = Math.abs(plDiff) < 0.5 ? '' : plDiff > 0 ? 'col-diff-neg' : 'col-diff-pos';
+      tds += `<td class="${dc2}">${plDiff >= 0 ? '+' : ''}${fmt(plDiff)}</td>`;
+    }
+    rows += `<tr class="${rowCls}">${tds}</tr>`;
+  }
+
+  wrap.innerHTML = `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderROUTable(ifrs, asc, lease) {
+  const wrap = document.getElementById('rou-table-wrap');
+  const showIFRS = currentView !== 'asc';
+  const showASC = currentView !== 'ifrs';
+
+  let headers = `<th>Month</th>`;
+  if (showIFRS) headers += `<th class="col-ifrs">ROU Open</th><th class="col-ifrs">Dep. Exp</th><th class="col-ifrs">ROU Close</th><th class="col-ifrs">Cumul. Dep</th>`;
+  if (showASC)  headers += `<th class="col-asc">ROU Open</th><th class="col-asc">Dep. Exp</th><th class="col-asc">ROU Close</th><th class="col-asc">Cumul. Dep</th>`;
+
+  let rows = '';
+  for (let i = 0; i < ifrs.rows.length; i++) {
+    const ir = ifrs.rows[i];
+    const ar = asc.rows[i];
+    const rowCls = ir.isModMonth ? 'mod-row' : '';
+    let tds = `<td>${ir.isModMonth ? '⚡ M' : 'M'}${ir.month}</td>`;
+    if (showIFRS) tds += `<td>${fmt(ir.rouOpen)}</td><td class="col-ifrs">${fmt(ir.depExp)}</td><td class="col-ifrs">${fmt(ir.rouClose)}</td><td>${fmt(ir.cumulDep)}</td>`;
+    if (showASC)  tds += `<td>${fmt(ar.rouOpen)}</td><td class="col-asc">${fmt(ar.depExp)}</td><td class="col-asc">${fmt(ar.rouClose)}</td><td>${fmt(ar.cumulDep)}</td>`;
+    rows += `<tr class="${rowCls}">${tds}</tr>`;
+  }
+
+  wrap.innerHTML = `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ─── LEASE MANAGEMENT ─────────────────────────────────────────────────
+
+function addLease() {
+  leases.push(defaultLease(leases.length + 1));
+  activeLeaseIdx = leases.length - 1;
+  renderLeaseTabs();
+  loadLeaseInputs();
+  recompute();
+}
+
+function removeLease() {
+  if (leases.length <= 1) { alert('At least one lease is required.'); return; }
+  leases.splice(activeLeaseIdx, 1);
+  activeLeaseIdx = Math.max(0, activeLeaseIdx - 1);
+  renderLeaseTabs();
+  loadLeaseInputs();
+  recompute();
+}
+
+function switchLease(idx) {
+  activeLeaseIdx = idx;
+  renderLeaseTabs();
+  loadLeaseInputs();
+  recompute();
+}
+
+function renderLeaseTabs() {
+  const container = document.getElementById('lease-tabs');
+  container.innerHTML = leases.map((l, i) =>
+    `<button class="lease-tab ${i === activeLeaseIdx ? 'active' : ''}" onclick="switchLease(${i})">${l.name}</button>`
+  ).join('');
+}
+
+function loadLeaseInputs() {
+  const l = leases[activeLeaseIdx];
+  document.getElementById('in-name').value = l.name;
+  document.getElementById('in-type').value = l.type;
+  document.getElementById('in-freq').value = l.freq;
+  document.getElementById('in-timing').value = l.timing;
+  document.getElementById('in-term').value = l.term;
+  document.getElementById('lbl-term').textContent = l.term;
+  document.getElementById('in-payment').value = l.payment;
+  document.getElementById('lbl-payment').textContent = l.payment.toLocaleString();
+  document.getElementById('in-rate').value = l.rate;
+  document.getElementById('lbl-rate').textContent = l.rate.toFixed(1) + '%';
+  document.getElementById('in-idc').value = l.idc;
+  document.getElementById('lbl-idc').textContent = l.idc.toLocaleString();
+  document.getElementById('in-incentive').value = l.incentive;
+  document.getElementById('lbl-incentive').textContent = l.incentive.toLocaleString();
+  document.getElementById('in-rvg').value = l.rvg;
+  document.getElementById('lbl-rvg').textContent = l.rvg.toLocaleString();
+  document.getElementById('mod-toggle').checked = l.mod;
+  document.getElementById('mod-box').style.display = l.mod ? 'block' : 'none';
+  document.getElementById('in-mod-at').value = l.modAt;
+  document.getElementById('lbl-mod-at').textContent = l.modAt;
+  document.getElementById('in-mod-payment').value = l.modPayment;
+  document.getElementById('lbl-mod-payment').textContent = l.modPayment.toLocaleString();
+  document.getElementById('in-mod-term').value = l.modTerm;
+  document.getElementById('lbl-mod-term').textContent = l.modTerm;
+  document.getElementById('in-mod-rate').value = l.modRate;
+  document.getElementById('lbl-mod-rate').textContent = l.modRate.toFixed(1) + '%';
+}
+
+function toggleMod(checked) {
+  updateState('mod', checked);
+  document.getElementById('mod-box').style.display = checked ? 'block' : 'none';
+  recompute();
+}
+
+// ─── EXPORT CSV ───────────────────────────────────────────────────────
+
+function exportCSV() {
+  const lease = leases[activeLeaseIdx];
+  const ifrs = ifrs16(lease);
+  const asc = asc842(lease);
+
+  let csv = 'Month,IFRS_Open_Liab,IFRS_Interest,IFRS_Payment,IFRS_Close_Liab,IFRS_ROU_Open,IFRS_Dep,IFRS_ROU_Close,IFRS_PL_Charge,ASC_Open_Liab,ASC_Interest,ASC_Payment,ASC_Close_Liab,ASC_ROU_Open,ASC_Dep,ASC_ROU_Close,ASC_PL_Charge\n';
+
+  for (let i = 0; i < ifrs.rows.length; i++) {
+    const ir = ifrs.rows[i];
+    const ar = asc.rows[i];
+    const ipl = ifrs.plRows[i].plCharge;
+    const apl = asc.plRows[i].plCharge;
+    csv += [
+      ir.month,
+      ir.openLiab.toFixed(2), ir.interestExp.toFixed(2), ir.payment.toFixed(2), ir.closeLiab.toFixed(2),
+      ir.rouOpen.toFixed(2), ir.depExp.toFixed(2), ir.rouClose.toFixed(2), ipl.toFixed(2),
+      ar.openLiab.toFixed(2), ar.interestExp.toFixed(2), ar.payment.toFixed(2), ar.closeLiab.toFixed(2),
+      ar.rouOpen.toFixed(2), ar.depExp.toFixed(2), ar.rouClose.toFixed(2), apl.toFixed(2),
+    ].join(',') + '\n';
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lease_schedule_${lease.name.replace(/\s+/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+addLease();
+leases[0].name = 'Office HQ';
+leases[0].term = 60;
+leases[0].payment = 5000;
+leases[0].rate = 5;
+loadLeaseInputs();
+renderLeaseTabs();
+recompute();
+</script>
+</body>
+</html>

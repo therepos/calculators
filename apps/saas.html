@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SaaS Scenario Planner</title>
+<meta name="description" content="ARR, MRR, churn, LTV, CAC — model SaaS unit economics across scenarios.">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --personal: #4fffb0;
+    --enterprise: #ff6b6b;
+    --accent: #7c6fff;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --personal-dim: rgba(79,255,176,0.12);
+    --enterprise-dim: rgba(255,107,107,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(124,111,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,111,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Controls Panel */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .plan-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .plan-card.personal { border-left: 3px solid var(--personal); }
+  .plan-card.enterprise { border-left: 3px solid var(--enterprise); }
+
+  .plan-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    transform: translate(40px, -40px);
+    opacity: 0.06;
+  }
+  .personal::before { background: var(--personal); }
+  .enterprise::before { background: var(--enterprise); }
+
+  .plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .plan-label {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .personal .plan-label { color: var(--personal); }
+  .enterprise .plan-label { color: var(--enterprise); }
+
+  .plan-mrr {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .slider-group {
+    margin-bottom: 16px;
+  }
+
+  .slider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .slider-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .slider-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    font-weight: 500;
+    min-width: 52px;
+    text-align: right;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .personal input[type="range"] {
+    background: linear-gradient(to right, var(--personal) 0%, var(--border) 0%);
+  }
+  .enterprise input[type="range"] {
+    background: linear-gradient(to right, var(--enterprise) 0%, var(--border) 0%);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .personal input[type="range"]::-webkit-slider-thumb { background: var(--personal); }
+  .enterprise input[type="range"]::-webkit-slider-thumb { background: var(--enterprise); }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+  .global-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .global-label {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .months-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  /* Right panel */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* KPI row */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-label {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    transition: color 0.3s;
+  }
+
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Charts */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .chart-title {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  canvas {
+    width: 100% !important;
+    display: block;
+  }
+
+  /* Table */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .table-title {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th:first-child { text-align: left; }
+
+  td {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 9px 12px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+
+  td:first-child {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .personal-col { color: var(--personal); }
+  .enterprise-col { color: var(--enterprise); }
+  .total-col { color: var(--text); font-weight: 600; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  :root {
+    --nav-bg:         rgba(10,10,15,0.94);
+    --nav-border:     rgba(42,42,61,0.8);
+    --nav-drawer-bg:  #12121a;
+    --nav-text:       #e8e8f0;
+    --nav-muted:      #6b6b8a;
+    --nav-accent:     #7c6fff;
+    --nav-hover:      rgba(255,255,255,0.04);
+    --nav-current-bg: rgba(124,111,255,0.09);
+    --nav-font:       'DM Mono', monospace;
+  }
+</style>
+<script src="../shared/nav.js"></script>
+</head>
+<body>
+<script>buildNav("saas-dashboard.html")</script>
+
+<div class="container">
+  <header>
+    <h1>Scenario Planner</h1>
+    <span class="subtitle">SaaS Revenue Forecast</span>
+  </header>
+
+  <div class="layout">
+    <!-- Controls -->
+    <div class="controls">
+
+      <!-- Personal Plan -->
+      <div class="plan-card personal">
+        <div class="plan-header">
+          <span class="plan-label">Personal Plan</span>
+          <span class="plan-mrr" id="p-current-mrr">$0 MRR</span>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Price / mo</span>
+            <span class="slider-value" id="p-price-val">$49</span>
+          </div>
+          <input type="range" id="p-price" min="9" max="199" value="49" step="1">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Subscribers</span>
+            <span class="slider-value" id="p-subs-val">1,500</span>
+          </div>
+          <input type="range" id="p-subs" min="100" max="10000" value="1500" step="50">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Growth / mo</span>
+            <span class="slider-value" id="p-growth-val">8%</span>
+          </div>
+          <input type="range" id="p-growth" min="0" max="30" value="8" step="0.5">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Churn / mo</span>
+            <span class="slider-value" id="p-churn-val">3%</span>
+          </div>
+          <input type="range" id="p-churn" min="0" max="15" value="3" step="0.5">
+        </div>
+      </div>
+
+      <!-- Enterprise Plan -->
+      <div class="plan-card enterprise">
+        <div class="plan-header">
+          <span class="plan-label">Enterprise Plan</span>
+          <span class="plan-mrr" id="e-current-mrr">$0 MRR</span>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Price / mo</span>
+            <span class="slider-value" id="e-price-val">$99</span>
+          </div>
+          <input type="range" id="e-price" min="49" max="999" value="99" step="5">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Subscribers</span>
+            <span class="slider-value" id="e-subs-val">400</span>
+          </div>
+          <input type="range" id="e-subs" min="10" max="5000" value="400" step="10">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Growth / mo</span>
+            <span class="slider-value" id="e-growth-val">5%</span>
+          </div>
+          <input type="range" id="e-growth" min="0" max="20" value="5" step="0.5">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-row">
+            <span class="slider-label">Churn / mo</span>
+            <span class="slider-value" id="e-churn-val">2%</span>
+          </div>
+          <input type="range" id="e-churn" min="0" max="10" value="2" step="0.5">
+        </div>
+      </div>
+
+      <!-- Global -->
+      <div class="global-card">
+        <div class="global-label">Forecast Window</div>
+        <div class="slider-group">
+          <div class="months-row">
+            <span class="slider-label">Months</span>
+            <span class="slider-value" id="months-val">12 mo</span>
+          </div>
+          <input type="range" id="months" min="3" max="36" value="12" step="1" style="background: linear-gradient(to right, var(--accent) 0%, var(--border) 0%)">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label">Total MRR Now</div>
+          <div class="kpi-value" id="kpi-mrr" style="color: var(--accent)">$0</div>
+          <div class="kpi-sub">Month 1</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Final MRR</div>
+          <div class="kpi-value" id="kpi-final-mrr" style="color: var(--personal)">$0</div>
+          <div class="kpi-sub" id="kpi-final-label">Month 12</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total ARR</div>
+          <div class="kpi-value" id="kpi-arr" style="color: var(--enterprise)">$0</div>
+          <div class="kpi-sub">Cumulative revenue</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total Subscribers</div>
+          <div class="kpi-value" id="kpi-subs" style="color: var(--text)">0</div>
+          <div class="kpi-sub" id="kpi-subs-label">at Month 12</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <div class="chart-title">MRR Growth</div>
+            <div class="legend">
+              <span><span class="legend-dot" style="background:var(--personal)"></span>Personal</span>
+              <span><span class="legend-dot" style="background:var(--enterprise)"></span>Enterprise</span>
+              <span><span class="legend-dot" style="background:var(--accent)"></span>Total</span>
+            </div>
+          </div>
+          <canvas id="mrr-chart" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <div class="chart-title">Subscriber Growth</div>
+            <div class="legend">
+              <span><span class="legend-dot" style="background:var(--personal)"></span>Personal</span>
+              <span><span class="legend-dot" style="background:var(--enterprise)"></span>Enterprise</span>
+            </div>
+          </div>
+          <canvas id="subs-chart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Monthly Breakdown</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="data-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>P. Subs</th>
+                <th>P. MRR</th>
+                <th>E. Subs</th>
+                <th>E. MRR</th>
+                <th>Total MRR</th>
+                <th>Cumul. Rev</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  // State
+  let mrrChart, subsChart;
+
+  const fmt = (n) => {
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+    return '$' + Math.round(n).toLocaleString();
+  };
+  const fmtN = (n) => n >= 1e3 ? (n/1e3).toFixed(1) + 'K' : Math.round(n).toLocaleString();
+
+  function getVals() {
+    return {
+      pPrice: +document.getElementById('p-price').value,
+      pSubs: +document.getElementById('p-subs').value,
+      pGrowth: +document.getElementById('p-growth').value / 100,
+      pChurn: +document.getElementById('p-churn').value / 100,
+      ePrice: +document.getElementById('e-price').value,
+      eSubs: +document.getElementById('e-subs').value,
+      eGrowth: +document.getElementById('e-growth').value / 100,
+      eChurn: +document.getElementById('e-churn').value / 100,
+      months: +document.getElementById('months').value,
+    };
+  }
+
+  function simulate(v) {
+    const data = [];
+    let pSubs = v.pSubs, eSubs = v.eSubs;
+    let cumul = 0;
+    for (let m = 1; m <= v.months; m++) {
+      const pMRR = pSubs * v.pPrice;
+      const eMRR = eSubs * v.ePrice;
+      const totalMRR = pMRR + eMRR;
+      cumul += totalMRR;
+      data.push({ m, pSubs: Math.round(pSubs), eSubs: Math.round(eSubs), pMRR, eMRR, totalMRR, cumul });
+      // Next month
+      pSubs = pSubs * (1 + v.pGrowth) * (1 - v.pChurn);
+      eSubs = eSubs * (1 + v.eGrowth) * (1 - v.eChurn);
+    }
+    return data;
+  }
+
+  function updateSliderTrack(el) {
+    const min = +el.min, max = +el.max, val = +el.value;
+    const pct = ((val - min) / (max - min)) * 100;
+    const parentCard = el.closest('.plan-card');
+    if (parentCard) {
+      const color = parentCard.classList.contains('personal') ? 'var(--personal)' : 'var(--enterprise)';
+      el.style.background = `linear-gradient(to right, ${color} ${pct}%, var(--border) ${pct}%)`;
+    } else {
+      el.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+    }
+  }
+
+  function update() {
+    const v = getVals();
+
+    // Update display values
+    document.getElementById('p-price-val').textContent = '$' + v.pPrice;
+    document.getElementById('p-subs-val').textContent = v.pSubs.toLocaleString();
+    document.getElementById('p-growth-val').textContent = (v.pGrowth*100).toFixed(1) + '%';
+    document.getElementById('p-churn-val').textContent = (v.pChurn*100).toFixed(1) + '%';
+    document.getElementById('e-price-val').textContent = '$' + v.ePrice;
+    document.getElementById('e-subs-val').textContent = v.eSubs.toLocaleString();
+    document.getElementById('e-growth-val').textContent = (v.eGrowth*100).toFixed(1) + '%';
+    document.getElementById('e-churn-val').textContent = (v.eChurn*100).toFixed(1) + '%';
+    document.getElementById('months-val').textContent = v.months + ' mo';
+
+    // Slider tracks
+    document.querySelectorAll('input[type="range"]').forEach(updateSliderTrack);
+
+    const data = simulate(v);
+    const first = data[0], last = data[data.length-1];
+
+    // Current MRR badges
+    document.getElementById('p-current-mrr').textContent = fmt(first.pMRR) + ' MRR';
+    document.getElementById('e-current-mrr').textContent = fmt(first.eMRR) + ' MRR';
+
+    // KPIs
+    document.getElementById('kpi-mrr').textContent = fmt(first.totalMRR);
+    document.getElementById('kpi-final-mrr').textContent = fmt(last.totalMRR);
+    document.getElementById('kpi-final-label').textContent = 'Month ' + v.months;
+    document.getElementById('kpi-arr').textContent = fmt(last.cumul);
+    document.getElementById('kpi-subs').textContent = fmtN(last.pSubs + last.eSubs);
+    document.getElementById('kpi-subs-label').textContent = 'at Month ' + v.months;
+
+    const labels = data.map(d => 'M' + d.m);
+
+    // MRR Chart
+    if (mrrChart) mrrChart.destroy();
+    mrrChart = new Chart(document.getElementById('mrr-chart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Personal',
+            data: data.map(d => d.pMRR),
+            borderColor: '#4fffb0',
+            backgroundColor: 'rgba(79,255,176,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+          {
+            label: 'Enterprise',
+            data: data.map(d => d.eMRR),
+            borderColor: '#ff6b6b',
+            backgroundColor: 'rgba(255,107,107,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+          {
+            label: 'Total',
+            data: data.map(d => d.totalMRR),
+            borderColor: '#7c6fff',
+            backgroundColor: 'transparent',
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2,
+            borderDash: [4, 4],
+          }
+        ]
+      },
+      options: chartOptions(v => '$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v))
+    });
+
+    // Subs Chart
+    if (subsChart) subsChart.destroy();
+    subsChart = new Chart(document.getElementById('subs-chart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Personal',
+            data: data.map(d => d.pSubs),
+            backgroundColor: 'rgba(79,255,176,0.3)',
+            borderColor: '#4fffb0',
+            borderWidth: 1,
+            borderRadius: 3,
+          },
+          {
+            label: 'Enterprise',
+            data: data.map(d => d.eSubs),
+            backgroundColor: 'rgba(255,107,107,0.3)',
+            borderColor: '#ff6b6b',
+            borderWidth: 1,
+            borderRadius: 3,
+          }
+        ]
+      },
+      options: chartOptions(v => v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v)
+    });
+
+    // Table
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = data.map(d => `
+      <tr>
+        <td>Month ${d.m}</td>
+        <td class="personal-col">${fmtN(d.pSubs)}</td>
+        <td class="personal-col">${fmt(d.pMRR)}</td>
+        <td class="enterprise-col">${fmtN(d.eSubs)}</td>
+        <td class="enterprise-col">${fmt(d.eMRR)}</td>
+        <td class="total-col">${fmt(d.totalMRR)}</td>
+        <td style="color:var(--accent)">${fmt(d.cumul)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function chartOptions(tickFmt) {
+    return {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a26',
+          borderColor: '#2a2a3d',
+          borderWidth: 1,
+          titleColor: '#6b6b8a',
+          bodyColor: '#e8e8f0',
+          padding: 12,
+          titleFont: { family: 'DM Mono', size: 11 },
+          bodyFont: { family: 'DM Mono', size: 12 },
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 }, maxTicksLimit: 8 },
+          border: { color: 'transparent' }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 }, callback: tickFmt },
+          border: { color: 'transparent' }
+        }
+      }
+    };
+  }
+
+  // Bind all inputs
+  document.querySelectorAll('input[type="range"]').forEach(el => {
+    el.addEventListener('input', update);
+  });
+
+  update();
+</script>
+</body>
+</html>
