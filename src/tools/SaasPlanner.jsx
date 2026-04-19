@@ -1,13 +1,17 @@
 import { useState, useMemo } from 'react';
 import ToolShell from '../components/ToolShell';
+import { NavBtn } from '../components/Navbar';
 import KpiCard from '../components/KpiCard';
 import DataTable from '../components/DataTable';
 import { Input, Section } from '../components/FormControls';
 import { T, fmt, fmtN } from '../shared';
 
+const DEFAULTS = { pPrice: 29, pSubs: 500, pGrowth: 8, pChurn: 3, ePrice: 199, eSubs: 50, eGrowth: 5, eChurn: 1.5, months: 24 };
+
 export default function SaasPlanner() {
-  const [s, setS] = useState({ pPrice: 29, pSubs: 500, pGrowth: 8, pChurn: 3, ePrice: 199, eSubs: 50, eGrowth: 5, eChurn: 1.5, months: 24 });
+  const [s, setS] = useState(DEFAULTS);
   const up = (k, val) => setS(p => ({ ...p, [k]: +val }));
+  const reset = () => setS({ ...DEFAULTS });
 
   const data = useMemo(() => {
     const rows = [];
@@ -25,44 +29,75 @@ export default function SaasPlanner() {
   const first = data[0], last = data[data.length - 1];
 
   return (
-    <ToolShell title="SaaS Scenario Planner" subtitle="Unit economics across scenarios">
-      <div className="px-kpi-auto" style={{ marginBottom: 24 }}>
-        <KpiCard label="Current MRR" value={fmt(first.totalMRR)} />
-        <KpiCard label={`MRR at M${s.months}`} value={fmt(last.totalMRR)} delta={`${((last.totalMRR / first.totalMRR - 1) * 100).toFixed(0)}%`} up={last.totalMRR > first.totalMRR} />
-        <KpiCard label="Cumulative rev" value={fmt(last.cumul)} />
-        <KpiCard label={`Subs at M${s.months}`} value={fmtN(last.pSubs + last.eSubs)} />
-      </div>
+    <ToolShell
+      title="SaaS Scenario Planner"
+      subtitle="Unit economics across scenarios"
+      actions={<NavBtn label="Reset" onClick={reset} />}
+    >
+      <div className="px-grid-2col" style={{ marginBottom: 24 }}>
+        <div className="px-card" style={cardStyle()}>
+          <CardTitle title="Inputs" sub="Configure plans and horizon; results update live." />
 
-      <div className="px-grid-sidebar-right">
-        <div>
-          <Section title="Monthly breakdown">
-            <DataTable
-              headers={['Month', 'P. subs', 'P. MRR', 'E. subs', 'E. MRR', 'Total MRR', 'Cumulative']}
-              rows={data.filter((_, i) => i % Math.max(1, Math.floor(data.length / 18)) === 0 || i === data.length - 1).map(d => [
-                `M${d.m}`, fmtN(d.pSubs), fmt(d.pMRR), fmtN(d.eSubs), fmt(d.eMRR), fmt(d.totalMRR), fmt(d.cumul),
-              ])}
-            />
-          </Section>
-        </div>
-
-        <div className="px-side-panel px-side-panel-card">
           <Section title="Personal plan">
-            <Input label="Price ($/mo)" type="number" value={s.pPrice} onChange={e => up('pPrice', e.target.value)} />
-            <Input label="Starting subs" type="number" value={s.pSubs} onChange={e => up('pSubs', e.target.value)} />
-            <Input label="Monthly growth (%)" type="number" value={s.pGrowth} onChange={e => up('pGrowth', e.target.value)} />
-            <Input label="Monthly churn (%)" type="number" value={s.pChurn} onChange={e => up('pChurn', e.target.value)} />
+            <div className="px-grid-2eq">
+              <Input label="Price ($/mo)" type="number" value={s.pPrice} onChange={e => up('pPrice', e.target.value)} />
+              <Input label="Starting subs" type="number" value={s.pSubs} onChange={e => up('pSubs', e.target.value)} />
+              <Input label="Monthly growth (%)" type="number" value={s.pGrowth} onChange={e => up('pGrowth', e.target.value)} />
+              <Input label="Monthly churn (%)" type="number" value={s.pChurn} onChange={e => up('pChurn', e.target.value)} />
+            </div>
           </Section>
+
           <Section title="Enterprise plan">
-            <Input label="Price ($/mo)" type="number" value={s.ePrice} onChange={e => up('ePrice', e.target.value)} />
-            <Input label="Starting subs" type="number" value={s.eSubs} onChange={e => up('eSubs', e.target.value)} />
-            <Input label="Monthly growth (%)" type="number" value={s.eGrowth} onChange={e => up('eGrowth', e.target.value)} />
-            <Input label="Monthly churn (%)" type="number" value={s.eChurn} onChange={e => up('eChurn', e.target.value)} />
+            <div className="px-grid-2eq">
+              <Input label="Price ($/mo)" type="number" value={s.ePrice} onChange={e => up('ePrice', e.target.value)} />
+              <Input label="Starting subs" type="number" value={s.eSubs} onChange={e => up('eSubs', e.target.value)} />
+              <Input label="Monthly growth (%)" type="number" value={s.eGrowth} onChange={e => up('eGrowth', e.target.value)} />
+              <Input label="Monthly churn (%)" type="number" value={s.eChurn} onChange={e => up('eChurn', e.target.value)} />
+            </div>
           </Section>
+
           <Section title="Horizon">
             <Input label="Months" type="number" value={s.months} onChange={e => up('months', e.target.value)} />
           </Section>
         </div>
+
+        <div className="px-card" style={cardStyle()}>
+          <CardTitle title="Key metrics" sub="Projection at end of horizon." />
+          <div className="px-kpi-2x2">
+            <KpiCard label="Current MRR" value={fmt(first.totalMRR)} />
+            <KpiCard
+              label={`MRR at M${s.months}`}
+              value={fmt(last.totalMRR)}
+              delta={`${((last.totalMRR / first.totalMRR - 1) * 100).toFixed(0)}%`}
+              up={last.totalMRR > first.totalMRR}
+            />
+            <KpiCard label="Cumulative rev" value={fmt(last.cumul)} />
+            <KpiCard label={`Subs at M${s.months}`} value={fmtN(last.pSubs + last.eSubs)} />
+          </div>
+        </div>
       </div>
+
+      <Section title="Monthly breakdown">
+        <DataTable
+          headers={['Month', 'P. subs', 'P. MRR', 'E. subs', 'E. MRR', 'Total MRR', 'Cumulative']}
+          rows={data.filter((_, i) => i % Math.max(1, Math.floor(data.length / 18)) === 0 || i === data.length - 1).map(d => [
+            `M${d.m}`, fmtN(d.pSubs), fmt(d.pMRR), fmtN(d.eSubs), fmt(d.eMRR), fmt(d.totalMRR), fmt(d.cumul),
+          ])}
+        />
+      </Section>
     </ToolShell>
   );
 }
+
+function CardTitle({ title, sub }) {
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+        <span style={{ display: 'inline-block', width: 6, height: 6, background: T.accent, borderRadius: 2 }} />
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{title}</h2>
+      </div>
+      <p style={{ fontSize: 12, color: T.text3, marginBottom: 14, lineHeight: 1.5 }}>{sub}</p>
+    </>
+  );
+}
+function cardStyle() { return { background: T.white, borderRadius: T.radiusLg, border: `1px solid ${T.border}`, padding: '20px 22px' }; }

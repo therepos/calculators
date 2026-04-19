@@ -188,6 +188,11 @@ details summary::-webkit-details-marker { display: none; }
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
 }
+.px-grid-5eq {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
 
 @media (max-width: 900px) {
   .px-grid-sidebar-right { grid-template-columns: minmax(0, 1fr); }
@@ -196,6 +201,7 @@ details summary::-webkit-details-marker { display: none; }
 @media (max-width: 640px) {
   .px-grid-2col { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .px-grid-2eq { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .px-grid-5eq { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* KPI strips ──────────────────────────────────── */
@@ -213,6 +219,11 @@ details summary::-webkit-details-marker { display: none; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+}
+.px-kpi-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 @media (max-width: 900px) {
   .px-kpi-strip-5 { grid-template-columns: repeat(3, 1fr); }
