@@ -419,7 +419,7 @@ export default function EngEconomics() {
       {/* ─── Two-column card grid ─── */}
       <div className="px-grid-2col" style={{ marginBottom: 24 }}>
         {/* ═════════ LEFT CARD ═════════ */}
-        <div style={cardStyle()}>
+        <div className="px-card" style={cardStyle()}>
           <CardTitle title="Resources & hours" sub="Plan budget hours, set budget, then track with ETC and actual hours." />
 
           {/* Header row */}
@@ -559,7 +559,7 @@ export default function EngEconomics() {
         </div>
 
         {/* ═════════ RIGHT CARD — Budget, Cost & Billing ═════════ */}
-        <div style={cardStyle()}>
+        <div className="px-card" style={cardStyle()}>
           <CardTitle title="Budget, cost & billing" sub="Set fee and target margin, then track cost and billing." />
 
           <SectionLabel>Budget</SectionLabel>

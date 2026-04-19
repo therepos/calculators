@@ -159,7 +159,12 @@ details summary::-webkit-details-marker { display: none; }
   .px-topbar { padding: 14px 16px; min-height: 0; }
   .px-topbar-title { font-size: 17px; }
   .px-topbar-sub { font-size: 11px; }
-  .px-main { padding: 18px 14px 40px; }
+  .px-main { padding: 16px 12px 40px; }
+}
+
+/* Cards inside .px-main shrink their padding on mobile */
+@media (max-width: 640px) {
+  .px-main .px-card { padding: 16px 14px !important; }
 }
 
 /* Generic two-column card grids (stack on mobile) ─ */
@@ -240,27 +245,41 @@ details summary::-webkit-details-marker { display: none; }
   gap: 6px;
   align-items: center;
 }
+/* Inputs inside grid cells need min-width:0 to respect column widths */
+.px-rank-row > * { min-width: 0; }
+
 @media (max-width: 640px) {
-  /* Reflow: rank on row 1 full width, 4 inputs on row 2 in 4 cols,
-     x-btn floats top-right of row 1. */
+  /* Reflow for mobile:
+     Row 1: rank select (full width) with x-btn floating top-right
+     Row 2: four number inputs in a 4-col grid */
   .px-rank-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 4px 6px;
-    padding: 8px 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px 0;
     border-bottom: 1px solid var(--px-border);
-    margin-bottom: 2px;
+    margin-bottom: 0;
   }
-  .px-rank-row > :nth-child(1) { grid-column: 1 / -1; }
+  .px-rank-row > :nth-child(1) { grid-column: 1 / span 3; grid-row: 1; }
   .px-rank-row > :nth-child(2) { grid-column: 1; grid-row: 2; }
   .px-rank-row > :nth-child(3) { grid-column: 2; grid-row: 2; }
   .px-rank-row > :nth-child(4) { grid-column: 3; grid-row: 2; }
   .px-rank-row > :nth-child(5) { grid-column: 4; grid-row: 2; }
-  .px-rank-row > :nth-child(6) { grid-column: 4 / 5; grid-row: 1; justify-self: end; }
+  .px-rank-row > :nth-child(6) { grid-column: 4; grid-row: 1; justify-self: end; align-self: center; }
 
-  .px-rank-header > :first-child { grid-column: 1 / -1; text-align: left !important; }
+  .px-rank-header { padding: 0 0 8px !important; }
+  .px-rank-header > :first-child { display: none; }
   .px-rank-header > :last-child { display: none; }
+  /* Remaining 4 cells (BGT/ETC/Total/Actual) land on row 1 via auto-placement */
+  .px-rank-header > :nth-child(2) { grid-column: 1; grid-row: 1; text-align: right; }
+  .px-rank-header > :nth-child(3) { grid-column: 2; grid-row: 1; text-align: right; }
+  .px-rank-header > :nth-child(4) { grid-column: 3; grid-row: 1; text-align: right; }
+  .px-rank-header > :nth-child(5) { grid-column: 4; grid-row: 1; text-align: right; }
 
-  .px-rank-total > :first-child { grid-column: 1 / -1; }
+  .px-rank-total > :first-child { grid-column: 1 / -1; grid-row: 1; }
+  .px-rank-total > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .px-rank-total > :nth-child(3) { grid-column: 2; grid-row: 2; }
+  .px-rank-total > :nth-child(4) { grid-column: 3; grid-row: 2; }
+  .px-rank-total > :nth-child(5) { grid-column: 4; grid-row: 2; }
   .px-rank-total > :last-child { display: none; }
 }
 
