@@ -304,9 +304,10 @@ details summary::-webkit-details-marker { display: none; }
 }
 .px-table-scroll > table { min-width: 700px; }
 
-/* Stat row input (right-aligned money field inside StatRow) ─ */
+/* Stat row value / input — right column must be same width so columns align */
 @media (max-width: 480px) {
-  .px-stat-money { width: 100px !important; }
+  .px-stat-money,
+  .px-stat-value { width: 100px !important; }
 }
 
 /* Booking estimate — allow horizontal scroll on mobile */

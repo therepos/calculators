@@ -956,10 +956,11 @@ function StatRow({ label, value, input, tone, emphasis, valueColor }) {
     }}>
       <span style={{ color: t.labelCol, display: 'flex', alignItems: 'center', gap: 4 }}>{label}</span>
       {input ? input : (
-        <span style={{
+        <span className="px-stat-value" style={{
           fontFamily: mono, color: valueColor || t.valCol,
           fontWeight: emphasis ? 600 : 500, fontSize: 13,
-          minWidth: 100, textAlign: 'right',
+          width: 130, padding: '0 10px', textAlign: 'right',
+          flexShrink: 0,
         }}>{value}</span>
       )}
     </div>
