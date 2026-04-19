@@ -525,6 +525,7 @@ tr:hover td { background: var(--surface2); }
   --nav-font:       'IBM Plex Mono', monospace;
 }
 </style>
+<script src="../shared/nav.js"></script>
 </head>
 <body>
 <script>buildNav("lease-accounting-dashboard.html")</script>
