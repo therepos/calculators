@@ -185,17 +185,17 @@ details summary::-webkit-details-marker { display: none; }
 }
 .px-grid-2eq {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
 }
 
 @media (max-width: 900px) {
-  .px-grid-sidebar-right { grid-template-columns: 1fr; }
+  .px-grid-sidebar-right { grid-template-columns: minmax(0, 1fr); }
   .px-grid-sidebar-right > .px-side-panel { position: static; order: -1; }
 }
 @media (max-width: 640px) {
-  .px-grid-2col { grid-template-columns: 1fr; gap: 14px; }
-  .px-grid-2eq { grid-template-columns: 1fr; gap: 12px; }
+  .px-grid-2col { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .px-grid-2eq { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
 
 /* KPI strips ──────────────────────────────────── */
@@ -290,7 +290,7 @@ details summary::-webkit-details-marker { display: none; }
   gap: 6px;
   margin-top: 14px;
 }
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .px-tab-row { grid-template-columns: 1fr 1fr; }
   .px-tab-row > :last-child { grid-column: 1 / -1; }
 }
