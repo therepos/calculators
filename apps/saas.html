@@ -6,383 +6,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SaaS Scenario Planner</title>
 <meta name="description" content="ARR, MRR, churn, LTV, CAC — model SaaS unit economics across scenarios.">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@300;400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a26;
-    --border: #2a2a3d;
-    --personal: #4fffb0;
-    --enterprise: #ff6b6b;
-    --accent: #7c6fff;
-    --text: #e8e8f0;
-    --muted: #6b6b8a;
-    --personal-dim: rgba(79,255,176,0.12);
-    --enterprise-dim: rgba(255,107,107,0.12);
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f9fa;
+  --surf:#ffffff;
+  --surf2:#f1f3f4;
+  --ol:#dadce0;
+  --olv:#e8eaed;
+  --t1:#202124;
+  --t2:#5f6368;
+  --t3:#80868b;
+  --blue:#1a73e8;
+  --blue-c:#d3e3fd;
+  --blue-dk:#1557b0;
+  --green:#34a853;
+  --green-c:#ceead6;
+  --red:#ea4335;
+  --red-c:#fad2cf;
+  --purple:#9334e6;
+  --purple-c:#e9d3fd;
+  --personal:#1a73e8;
+  --enterprise:#9334e6;
+  --personal-dim:#d3e3fd;
+  --enterprise-dim:#e9d3fd;
+  --accent:var(--blue);
+  --fs:'Google Sans','Roboto',system-ui,sans-serif;
+  --fm:'Roboto Mono','Consolas',monospace;
+  --muted:var(--t3);
+  --text:var(--t1);
+  --surface:var(--surf);
+  --surface2:var(--surf2);
+  --border:var(--ol);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--fs);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;font-size:14px}
+input,select,button{font-family:var(--fs)}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--olv);outline:none;width:100%;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .12s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.1)}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* App header */
+.app-header,.title-row{background:var(--surf);border-bottom:1px solid var(--olv);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1.app-title,.title-row h1{font-size:20px;font-weight:600;color:var(--t1);letter-spacing:-.01em}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* Main layout */
+.container{max-width:1200px;margin:0 auto;padding:24px 20px 80px}
+.subtitle{font-size:13px;color:var(--t3);margin-bottom:24px;line-height:1.5}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:20px}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
 
-  /* Background grid */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: 
-      linear-gradient(rgba(124,111,255,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,111,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* Controls panel */
+.controls{background:var(--surf);border:1px solid var(--olv);border-radius:16px;padding:20px}
+.controls-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--olv)}
 
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 32px;
-    position: relative;
-    z-index: 1;
-  }
+/* Plan cards */
+.plan-card{border:1px solid var(--olv);border-radius:12px;padding:16px;margin-bottom:16px;transition:border .15s}
+.plan-card.personal{border-top:3px solid var(--personal);background:var(--surf)}
+.plan-card.enterprise{border-top:3px solid var(--enterprise);background:var(--surf)}
+.plan-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.plan-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.plan-card.personal .plan-label{color:var(--personal)}
+.plan-card.enterprise .plan-label{color:var(--enterprise)}
+.plan-mrr{font-size:18px;font-weight:700;font-family:var(--fm);color:var(--t1)}
 
-  header {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    margin-bottom: 48px;
-  }
+/* Sliders */
+.slider-group{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.slider-row{display:flex;flex-direction:column;gap:6px}
+.slider-label{font-size:12px;color:var(--t2);display:flex;justify-content:space-between;align-items:baseline}
+.slider-value{font-size:12px;font-weight:600;font-family:var(--fm);color:var(--t1)}
 
-  h1 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+/* Output / chart area */
+.output-area,.charts-area{display:flex;flex-direction:column;gap:16px}
 
-  .subtitle {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi-card{background:var(--surf);border:1px solid var(--olv);border-radius:12px;padding:14px 16px}
+.kpi-label{font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.kpi-value{font-size:22px;font-weight:600;font-family:var(--fm);color:var(--t1);line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--t3);margin-top:3px}
+.kpi-card.personal .kpi-value{color:var(--personal)}
+.kpi-card.enterprise .kpi-value{color:var(--enterprise)}
+.kpi-card.total .kpi-value{color:var(--green)}
 
-  .layout {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
+/* Chart containers */
+.chart-wrap{background:var(--surf);border:1px solid var(--olv);border-radius:12px;padding:16px}
+.chart-title{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+canvas{max-width:100%}
 
-  /* Controls Panel */
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+/* Scenario section */
+.scenarios,.scenario-section{background:var(--surf);border:1px solid var(--olv);border-radius:12px;padding:16px}
+.scenario-title,.section-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.scenario-title::before,.section-title::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--blue);display:block}
 
-  .plan-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
+/* Table styles */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--surf2);color:var(--t2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--olv)}
+th.num,td.num{text-align:right;font-family:var(--fm)}
+td{padding:8px 10px;border-bottom:1px solid var(--olv);color:var(--t1)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surf2)}
+.personal-col{color:var(--personal);font-weight:600}
+.enterprise-col{color:var(--enterprise);font-weight:600}
+.total-col{color:var(--green);font-weight:600}
 
-  .plan-card.personal { border-left: 3px solid var(--personal); }
-  .plan-card.enterprise { border-left: 3px solid var(--enterprise); }
+/* Buttons */
+.btn,.btn-primary{height:36px;padding:0 20px;border:none;border-radius:20px;background:var(--blue);color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
+.btn:hover,.btn-primary:hover{background:var(--blue-dk)}
+.btn-outline{height:36px;padding:0 16px;border:1px solid var(--ol);border-radius:20px;background:var(--surf);color:var(--t1);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-outline:hover{background:var(--surf2);border-color:var(--t2)}
 
-  .plan-card::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    transform: translate(40px, -40px);
-    opacity: 0.06;
-  }
-  .personal::before { background: var(--personal); }
-  .enterprise::before { background: var(--enterprise); }
+/* Select */
+select{height:38px;border:1px solid var(--ol);border-radius:8px;padding:0 10px;font-size:13px;color:var(--t1);background:var(--surf);outline:none;cursor:pointer;transition:border .12s;width:100%}
+select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 
-  .plan-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+/* Number input */
+input[type=number]{height:38px;border:1px solid var(--ol);border-radius:8px;padding:0 10px;font-size:13px;color:var(--t1);background:var(--surf);outline:none;width:100%;transition:border .12s}
+input[type=number]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 
-  .plan-label {
-    font-size: 0.65rem;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-  .personal .plan-label { color: var(--personal); }
-  .enterprise .plan-label { color: var(--enterprise); }
+/* Positive/negative */
+.pos{color:var(--green)!important;font-weight:600}
+.neg{color:var(--red)!important;font-weight:600}
 
-  .plan-mrr {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
+/* Dividers */
+.divider{height:1px;background:var(--olv);margin:16px 0}
 
-  .slider-group {
-    margin-bottom: 16px;
-  }
-
-  .slider-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-
-  .slider-label {
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
-  .slider-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--text);
-    font-weight: 500;
-    min-width: 52px;
-    text-align: right;
-  }
-
-  input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 4px;
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  .personal input[type="range"] {
-    background: linear-gradient(to right, var(--personal) 0%, var(--border) 0%);
-  }
-  .enterprise input[type="range"] {
-    background: linear-gradient(to right, var(--enterprise) 0%, var(--border) 0%);
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  .personal input[type="range"]::-webkit-slider-thumb { background: var(--personal); }
-  .enterprise input[type="range"]::-webkit-slider-thumb { background: var(--enterprise); }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
-
-  .global-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .global-label {
-    font-size: 0.65rem;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 20px;
-    font-weight: 500;
-  }
-
-  .months-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-
-  /* Right panel */
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  /* KPI row */
-  .kpis {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-  }
-
-  .kpi {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .kpi-label {
-    font-size: 0.65rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .kpi-value {
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    transition: color 0.3s;
-  }
-
-  .kpi-sub {
-    font-size: 0.72rem;
-    color: var(--muted);
-    margin-top: 4px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* Charts */
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .chart-title {
-    font-size: 0.7rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
-  canvas {
-    width: 100% !important;
-    display: block;
-  }
-
-  /* Table */
-  .table-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    overflow: hidden;
-  }
-
-  .table-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .table-title {
-    font-size: 0.7rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th {
-    font-size: 0.65rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 8px 12px;
-    text-align: right;
-    border-bottom: 1px solid var(--border);
-  }
-
-  th:first-child { text-align: left; }
-
-  td {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    padding: 9px 12px;
-    text-align: right;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.15s;
-  }
-
-  td:first-child {
-    text-align: left;
-    color: var(--muted);
-    font-weight: 500;
-  }
-
-  tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .personal-col { color: var(--personal); }
-  .enterprise-col { color: var(--enterprise); }
-  .total-col { color: var(--text); font-weight: 600; }
-
-  /* Legend */
-  .legend {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    font-size: 0.7rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-  }
-
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 4px;
-  }
-
-  :root {
-    --nav-bg:         rgba(10,10,15,0.94);
-    --nav-border:     rgba(42,42,61,0.8);
-    --nav-drawer-bg:  #12121a;
-    --nav-text:       #e8e8f0;
-    --nav-muted:      #6b6b8a;
-    --nav-accent:     #7c6fff;
-    --nav-hover:      rgba(255,255,255,0.04);
-    --nav-current-bg: rgba(124,111,255,0.09);
-    --nav-font:       'DM Mono', monospace;
-  }
+@media(max-width:600px){.container{padding:16px 12px 60px}.kpi-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>

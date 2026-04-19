@@ -2,6 +2,5 @@
   {"slug":"dcfmodel","file":"dcfmodel.html","href":"apps/dcfmodel.html","title":"DCF Modeler","description":"Discounted cash flow valuation with multi-scenario analysis and sensitivity tables.","accent":"#4fd1a5"},
   {"slug":"engeconomics","file":"engeconomics.html","href":"apps/engeconomics.html","title":"Engagement Economics Calculator","description":"Plan budgets, track ETC, and monitor NSR, ANSR, EAF, margin, and NUI in real time.","accent":null},
   {"slug":"leases","file":"leases.html","href":"apps/leases.html","title":"Lease Accounting Calculator","description":"IFRS 16 and ASC 842 lease liability and right-of-use asset schedules.","accent":null},
-  {"slug":"saas","file":"saas.html","href":"apps/saas.html","title":"SaaS Scenario Planner","description":"ARR, MRR, churn, LTV, CAC — model SaaS unit economics across scenarios.","accent":"#7c6fff"},
-  {"slug":"vaultmerge","file":"vaultmerge.html","href":"apps/vaultmerge.html","title":"VaultMerge","description":"Merge Brave browser passwords into a Vaultwarden export. Runs entirely in your browser.","accent":"#c8f135"}
+  {"slug":"saas","file":"saas.html","href":"apps/saas.html","title":"SaaS Scenario Planner","description":"ARR, MRR, churn, LTV, CAC — model SaaS unit economics across scenarios.","accent":"#7c6fff"}
 ]
