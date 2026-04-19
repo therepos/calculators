@@ -1,38 +1,44 @@
 /* ═══════════════════════════════════════════════════════════════
    shared.jsx — Constants, tokens (JS), icons, formatting utils.
-   Imported by every component and tool.
    ═══════════════════════════════════════════════════════════════ */
 
-// JS-side tokens (mirrors CSS vars for inline styles)
 export const T = {
-  bg: '#F5F5F7',
+  bg: '#F0F1F5',
   white: '#FFFFFF',
-  surface2: '#F9F9FB',
-  border: '#E5E5EA',
-  border2: '#D1D1D6',
-  text: '#1D1D1F',
-  text2: '#48484A',
-  text3: '#86868B',
-  text4: '#AEAEB2',
-  accent: '#0071E3',
-  accentSoft: 'rgba(0,113,227,0.06)',
-  green: '#34C759',
-  greenDk: '#248A3D',
-  greenSoft: 'rgba(52,199,89,0.08)',
-  red: '#FF3B30',
-  redSoft: 'rgba(255,59,48,0.08)',
-  orange: '#FF9500',
-  orangeSoft: 'rgba(255,149,0,0.08)',
-  purple: '#AF52DE',
-  purpleSoft: 'rgba(175,82,222,0.07)',
-  shadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
-  shadowHover: '0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.05)',
-  radius: 12,
-  radiusSm: 8,
+  surface2: '#F6F7FA',
+  border: '#E2E4EA',
+  border2: '#D0D3DB',
+  text: '#111318',
+  text2: '#3B3F4A',
+  text3: '#6B7080',
+  text4: '#9CA1AE',
+  accent: '#3B5BDB',
+  accentHover: '#364FC7',
+  accentSoft: 'rgba(59,91,219,0.07)',
+  green: '#2B9348',
+  greenDk: '#1E6B33',
+  greenSoft: 'rgba(43,147,72,0.08)',
+  red: '#E03131',
+  redSoft: 'rgba(224,49,49,0.07)',
+  orange: '#E67700',
+  orangeSoft: 'rgba(230,119,0,0.07)',
+  purple: '#7048E8',
+  purpleSoft: 'rgba(112,72,232,0.07)',
+  sidebar: '#1A1D24',
+  sidebarHover: '#252830',
+  sidebarText: '#C1C5CF',
+  sidebarActive: '#FFFFFF',
+  shadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
+  shadowHover: '0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.06)',
+  shadowSm: '0 1px 2px rgba(0,0,0,0.05)',
+  radius: 10,
+  radiusSm: 6,
+  radiusLg: 14,
+  transition: '0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
 };
 
-export const font = `-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif`;
-export const mono = `'SF Mono','Menlo','Consolas',monospace`;
+export const font = `'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif`;
+export const mono = `'JetBrains Mono', 'SF Mono', 'Menlo', monospace`;
 
 // ─── Formatting ───
 export const fmt = n => n == null || isNaN(n) ? '—' : '$' + Math.round(n).toLocaleString('en-US');
@@ -43,13 +49,13 @@ export const fmtN = n => n == null || isNaN(n) ? '—' : Math.round(n).toLocaleS
 
 // ─── Icons (inline SVG) ───
 export const ChevronLeft = ({ size = 14, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text3} strokeWidth="2" strokeLinecap="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text3} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M15 19l-7-7 7-7" />
   </svg>
 );
 
-export const SearchIcon = ({ size = 13, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text4} strokeWidth="2">
+export const SearchIcon = ({ size = 15, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || T.text4} strokeWidth="2" strokeLinecap="round">
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
   </svg>
 );
