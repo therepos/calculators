@@ -282,15 +282,21 @@ export default function EngEconomics() {
     if (lk) return;
     if (calc.feeN <= 0) { alert('Enter Agreed Fees first.'); return; }
     const bca = calc.feeN * (1 - (+tgt || 0) / 100);
-    // Build rows from rank mix weights, scaled so total cost = bca
-    const activeRanks = rankNames.filter(n => (rates[n].mix || 0) > 0);
-    const totalMix = activeRanks.reduce((s, n) => s + (rates[n].mix || 0), 0);
-    if (totalMix === 0) return;
-    const newRows = activeRanks.map(n => {
-      const share = (rates[n].mix || 0) / totalMix;
+    // Allocate across the CURRENT rows (respect user's resource mix),
+    // weighted by each row's rate-card mix %. If none of the kept rows
+    // have a mix weight, fall back to equal share so it still allocates.
+    if (rows.length === 0) { alert('Add at least one resource row first.'); return; }
+    const weights = rows.map(r => rates[r.rank]?.mix || 0);
+    let totalW = weights.reduce((s, w) => s + w, 0);
+    const useEqual = totalW === 0;
+    if (useEqual) totalW = rows.length;
+    const newRows = rows.map((r, i) => {
+      const rk = rates[r.rank];
+      if (!rk) return r;
+      const share = (useEqual ? 1 : weights[i]) / totalW;
       const costShare = bca * share;
-      const hrs = Math.round(costShare / rates[n].cost);
-      return { rank: n, b: hrs, e: 0, a: 0 };
+      const hrs = Math.round(costShare / rk.cost);
+      return { ...r, b: hrs, e: 0, a: 0 };
     });
     setRows(newRows);
   };
