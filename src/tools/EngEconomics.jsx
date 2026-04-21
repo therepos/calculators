@@ -120,6 +120,29 @@ export default function EngEconomics() {
   const [history, setHistory] = useState([]);
   const [savedFlash, setSavedFlash] = useState(false);
 
+  // Starting week (Monday). Defaults to the Monday of the current week or
+  // next Monday if today is already past Monday. Stored as YYYY-MM-DD.
+  const getNextMonday = () => {
+    const d = new Date();
+    const dow = d.getDay(); // 0=Sun..6=Sat
+    const daysUntilMon = dow === 1 ? 0 : (8 - dow) % 7 || 7;
+    // If today IS Monday, use today; otherwise advance to upcoming Monday
+    const target = new Date(d);
+    target.setDate(d.getDate() + (dow === 1 ? 0 : ((1 - dow + 7) % 7 || 7)));
+    target.setHours(0, 0, 0, 0);
+    return target.toISOString().slice(0, 10);
+  };
+  const snapToMonday = iso => {
+    if (!iso) return iso;
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return iso;
+    const dow = d.getDay();
+    const diff = (dow === 0 ? -6 : 1 - dow); // snap back to Monday of that week
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  };
+  const [startWeek, setStartWeek] = useState(getNextMonday);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem('praxis_eng_history_v2');
@@ -410,6 +433,9 @@ export default function EngEconomics() {
       nsr: calc.nsr, fee: calc.feeN, ter: calc.feeN + calc.bxpN,
       eaf: calc.eaf, cost: calc.cost,
       mgn: calc.bM, mp: calc.bMP, nui: calc.nui,
+      // Weekly-booking inputs (new; older entries may lack these)
+      rows: rows.map(r => ({ rank: r.rank, b: r.b, e: r.e, a: r.a })),
+      startWeek,
     };
     setHistory(p => [entry, ...p]);
     setSavedFlash(true);
@@ -423,7 +449,69 @@ export default function EngEconomics() {
       [`"${s.d}"`, `"${s.nm.replace(/"/g, '""')}"`, s.tag, s.etcCount, `"${s.etcDate || ''}"`,
        s.aH, s.h, s.fee.toFixed(2), s.cost.toFixed(2), s.mgn.toFixed(2),
        `${(s.mp * 100).toFixed(2)}%`, s.nui.toFixed(2)].join(','));
-    const blob = new Blob(['\uFEFF' + [hdr, ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+
+    // Build per-engagement weekly booking sections. Uses saved rows+startWeek
+    // when present; older history entries without these are skipped.
+    const csvQuote = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const addDaysISO = (iso, days) => {
+      const d = new Date(iso + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+    const hoursToBlocks = h => {
+      // 40h = 100%; partial weeks round to nearest 10% (min 10%)
+      if (!h || h <= 0) return [];
+      const full = Math.floor(h / HPW);
+      const partial = h % HPW;
+      const out = [];
+      for (let i = 0; i < full; i++) out.push(100);
+      if (partial > 0) {
+        let p = Math.round((partial / HPW) * 100);
+        p = Math.round(p / 10) * 10;
+        if (p === 0) p = 10;
+        out.push(p);
+      }
+      return out;
+    };
+
+    const gridSections = [];
+    history.forEach(s => {
+      if (!Array.isArray(s.rows) || !s.startWeek) return;
+      const activeRows = s.rows.filter(r => (r.b || 0) > 0 || (r.e || 0) > 0);
+      if (!activeRows.length) return;
+
+      // Build per-row weekly % array (budget blocks + optional ETC blocks)
+      const perRow = activeRows.map(r => {
+        const blocks = hoursToBlocks(r.b);
+        const etcBlocks = hoursToBlocks(r.e);
+        etcBlocks.forEach(p => blocks.push(p));
+        // Delay Associate/Staff by one week (onboarding)
+        if (r.rank === 'Associate / Staff' && blocks.length > 0) {
+          blocks.unshift(null);
+        }
+        return { rank: r.rank, blocks };
+      });
+
+      const maxLen = Math.max(0, ...perRow.map(r => r.blocks.length));
+      if (maxLen === 0) return;
+
+      const weekDates = Array.from({ length: maxLen },
+        (_, i) => addDaysISO(s.startWeek, i * 7));
+
+      gridSections.push('');
+      gridSections.push(`Weekly booking: ${csvQuote(s.nm)} (starts ${s.startWeek})`);
+      gridSections.push(['Rank', ...weekDates].join(','));
+      perRow.forEach(r => {
+        const cells = Array.from({ length: maxLen }, (_, i) => {
+          const v = r.blocks[i];
+          return v == null ? '' : `${v}%`;
+        });
+        gridSections.push([csvQuote(r.rank), ...cells].join(','));
+      });
+    });
+
+    const body = [hdr, ...lines, ...gridSections].join('\r\n');
+    const blob = new Blob(['\uFEFF' + body], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'engagement_economics.csv';
@@ -637,6 +725,26 @@ export default function EngEconomics() {
               }}>Auto-allocate from cost allowance</button>
             </div>
           )}
+
+          {/* Starting week — used when exporting weekly booking grid */}
+          <div style={{
+            marginTop: 14, display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 12, color: T.text2, flexWrap: 'wrap',
+          }}>
+            <label htmlFor="px-start-week" style={{ color: T.text3, fontWeight: 600 }}>
+              Starting week (Mon)
+            </label>
+            <input
+              id="px-start-week"
+              type="date"
+              value={startWeek}
+              onChange={e => setStartWeek(snapToMonday(e.target.value))}
+              style={{
+                fontSize: 12, padding: '4px 8px', borderRadius: 6,
+                border: `1px solid ${T.border}`, background: T.white, color: T.text,
+              }}
+            />
+          </div>
 
           {/* Action tabs */}
           <div className="px-tab-row">
