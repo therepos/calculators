@@ -11,18 +11,34 @@ import { T, mono, fmtN } from '../shared';
              Portfolio Monitor view (toggled via header).
    ═══════════════════════════════════════════════════════════════ */
 
-// ─── Default rate card ───
-const DEFAULT_RATES = {
-  'Partner/Principal':    { nsr: 621, cost: 993, abbr: 'P',  mix: 2  },
-  'Director':             { nsr: 454, cost: 381, abbr: 'D',  mix: 3  },
-  'Senior Manager':       { nsr: 384, cost: 320, abbr: 'SM', mix: 4  },
-  'Manager':              { nsr: 223, cost: 128, abbr: 'M',  mix: 12 },
-  'Senior Associate 3':   { nsr: 176, cost: 92,  abbr: 'S3', mix: 0  },
-  'Senior Associate 2':   { nsr: 159, cost: 82,  abbr: 'S2', mix: 0  },
-  'Senior Associate 1':   { nsr: 138, cost: 79,  abbr: 'S1', mix: 21 },
-  'Associate / Staff':    { nsr: 93,  cost: 64,  abbr: 'AA', mix: 58 },
-  'Intern (CS)':          { nsr: 45,  cost: 9,   abbr: 'IN', mix: 0  },
+// ─── Default rate cards (by fiscal year) ───
+const RATE_CARDS = {
+  'FY2025-26': {
+    'Partner/Principal':    { nsr: 621, cost: 993, abbr: 'P',  mix: 2  },
+    'Director':             { nsr: 454, cost: 381, abbr: 'D',  mix: 3  },
+    'Senior Manager':       { nsr: 384, cost: 320, abbr: 'SM', mix: 4  },
+    'Manager':              { nsr: 223, cost: 128, abbr: 'M',  mix: 12 },
+    'Senior Associate 3':   { nsr: 176, cost: 92,  abbr: 'S3', mix: 0  },
+    'Senior Associate 2':   { nsr: 159, cost: 82,  abbr: 'S2', mix: 0  },
+    'Senior Associate 1':   { nsr: 138, cost: 79,  abbr: 'S1', mix: 21 },
+    'Associate / Staff':    { nsr: 93,  cost: 64,  abbr: 'AA', mix: 58 },
+    'Intern (CS)':          { nsr: 45,  cost: 9,   abbr: 'IN', mix: 0  },
+  },
+  'FY2026-27': {
+    'Partner/Principal':    { nsr: 640, cost: 1038,   abbr: 'P',  mix: 2  },
+    'Director':             { nsr: 468, cost: 398.1,  abbr: 'D',  mix: 3  },
+    'Senior Manager':       { nsr: 396, cost: 334.4,  abbr: 'SM', mix: 4  },
+    'Manager':              { nsr: 230, cost: 133.8,  abbr: 'M',  mix: 12 },
+    'Senior Associate 3':   { nsr: 181, cost: 96.14,  abbr: 'S3', mix: 0  },
+    'Senior Associate 2':   { nsr: 164, cost: 85.69,  abbr: 'S2', mix: 0  },
+    'Senior Associate 1':   { nsr: 142, cost: 82.56,  abbr: 'S1', mix: 21 },
+    'Associate / Staff':    { nsr: 96,  cost: 66.88,  abbr: 'AA', mix: 58 },
+    'Intern (CS)':          { nsr: 45,  cost: 9,      abbr: 'IN', mix: 0  },
+  },
 };
+const RATE_YEARS = Object.keys(RATE_CARDS);
+const DEFAULT_YEAR = 'FY2025-26';
+const DEFAULT_RATES = RATE_CARDS[DEFAULT_YEAR];
 
 // Staff excluded from booking estimate (partners/managers don't appear as weekly bookings)
 const STAFF_EXCLUDE = ['Partner/Principal', 'Director', 'Senior Manager', 'Manager'];
@@ -65,6 +81,7 @@ function formatMoneyInput(el) {
 
 export default function EngEconomics() {
   const [view, setView] = useState('calc'); // 'calc' | 'pm'
+  const [rateYear, setRateYear] = useState(DEFAULT_YEAR);
   const [rates, setRates] = useState(DEFAULT_RATES);
   const rankNames = Object.keys(rates);
 
@@ -107,8 +124,14 @@ export default function EngEconomics() {
     try {
       const raw = localStorage.getItem('praxis_eng_history_v2');
       if (raw) setHistory(JSON.parse(raw));
-      const rawRates = localStorage.getItem('praxis_eng_rates');
-      if (rawRates) setRates(JSON.parse(rawRates));
+      const savedYear = localStorage.getItem('praxis_eng_rate_year');
+      if (savedYear && RATE_CARDS[savedYear]) {
+        setRateYear(savedYear);
+        setRates(RATE_CARDS[savedYear]);
+      } else {
+        const rawRates = localStorage.getItem('praxis_eng_rates');
+        if (rawRates) setRates(JSON.parse(rawRates));
+      }
     } catch {}
   }, []);
   useEffect(() => {
@@ -117,6 +140,16 @@ export default function EngEconomics() {
   useEffect(() => {
     try { localStorage.setItem('praxis_eng_rates', JSON.stringify(rates)); } catch {}
   }, [rates]);
+  useEffect(() => {
+    try { localStorage.setItem('praxis_eng_rate_year', rateYear); } catch {}
+  }, [rateYear]);
+
+  // Apply rate card when user changes year
+  const changeRateYear = y => {
+    if (!RATE_CARDS[y]) return;
+    setRateYear(y);
+    setRates(RATE_CARDS[y]);
+  };
 
   // ─── Derived values (single source of truth: calc) ───
   const calc = useMemo(() => {
@@ -724,7 +757,22 @@ export default function EngEconomics() {
           marginTop: 10, background: T.white, border: `1px solid ${T.border}`,
           borderRadius: T.radius, padding: '14px 16px', fontSize: 13, color: T.text2,
         }}>
-          <strong style={{ color: T.text }}>Current rates</strong>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <strong style={{ color: T.text }}>Current rates</strong>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text2 }}>
+              Rate year:
+              <select
+                value={rateYear}
+                onChange={e => changeRateYear(e.target.value)}
+                style={{
+                  fontSize: 12, padding: '4px 8px', borderRadius: 6,
+                  border: `1px solid ${T.border}`, background: T.white, color: T.text,
+                }}
+              >
+                {RATE_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </label>
+          </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             <button onClick={downloadRateTemplate} style={btnSecondary()}>Download template</button>
             <button onClick={() => fileRef.current?.click()} style={btnSecondary()}>Import rates</button>
