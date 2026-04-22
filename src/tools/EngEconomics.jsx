@@ -743,15 +743,12 @@ export default function EngEconomics() {
             const total = lk ? (etcOpen ? r.b + r.e : r.b + r.e) : 0;
             return (
               <div key={i} className="px-rank-row" style={{ marginBottom: 6 }}>
-                <select
+                <RankSelect
                   value={r.rank} disabled={lk}
-                  onChange={e => updateRow(i, { rank: e.target.value })}
-                  style={{ ...rowSelect(), opacity: lk ? 0.6 : 1, cursor: lk ? 'default' : 'pointer' }}
-                >
-                  {rankNames.map(n => (
-                    <option key={n} value={n}>{rates[n]?.abbr || n}</option>
-                  ))}
-                </select>
+                  onChange={v => updateRow(i, { rank: v })}
+                  rates={rates}
+                  rankNames={rankNames}
+                />
                 <NumCell
                   value={r.b} locked={lk}
                   onChange={v => updateRow(i, { b: +v || 0, e: 0, a: 0 })}
@@ -1279,6 +1276,77 @@ function ColHdr({ children, align = 'left', color }) {
       fontSize: 10, fontWeight: 600, color: color || T.text3,
       textTransform: 'uppercase', letterSpacing: 0.5, textAlign: align,
     }}>{children}</span>
+  );
+}
+
+function RankSelect({ value, disabled, onChange, rates, rankNames }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+  const abbr = rates[value]?.abbr || value;
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(o => !o)}
+        title={rates[value] ? `${abbr} — ${value}` : value}
+        style={{
+          ...rowSelect(),
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? 'default' : 'pointer',
+          textAlign: 'left',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{abbr}</span>
+        <span style={{ color: T.text4, fontSize: 10, marginLeft: 4 }}>▾</span>
+      </button>
+      {open && !disabled && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, marginTop: 2,
+          minWidth: '100%', width: 'max-content', maxHeight: 320,
+          overflowY: 'auto', zIndex: 20,
+          background: T.white, border: `1px solid ${T.border}`,
+          borderRadius: T.radiusSm,
+          boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
+          fontSize: 12,
+        }}>
+          {rankNames.map(n => {
+            const selected = n === value;
+            return (
+              <div
+                key={n}
+                onClick={() => { onChange(n); setOpen(false); }}
+                style={{
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  background: selected ? T.bgSoft || '#F1F5F9' : T.white,
+                  color: T.text,
+                  display: 'flex', gap: 8, alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#F8FAFC'; }}
+                onMouseLeave={e => { if (!selected) e.currentTarget.style.background = T.white; }}
+              >
+                <span style={{
+                  display: 'inline-block', minWidth: 32,
+                  color: T.text3, fontFamily: mono, fontSize: 11,
+                }}>{rates[n]?.abbr || ''}</span>
+                <span>{n}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
