@@ -74,6 +74,25 @@ const RANK_COLORS = [
 const ETC_COLOR = { bg: '#A32D2D', bgL: '#E24B4A' };
 const HPW = 40, COLS = 12;
 
+// ─── Mix profiles for auto-allocate ───
+// Rules common to all: Partner >= 1 (2 if possible), Partner + Manager = 20%
+// of total hours. Remaining 80% splits between seniors and associates.
+const MIX_PROFILES = {
+  Standard:  { seniorShare: 0.55, assocShare: 0.45 },
+  Associate: { seniorShare: 0.40, assocShare: 0.60 },
+  Senior:    { seniorShare: 0.60, assocShare: 0.40 },
+};
+const MIX_TYPES = Object.keys(MIX_PROFILES);
+const DEFAULT_MIX_TYPE = 'Standard';
+
+// Which ranks count as seniors vs associates for the mix split.
+// Based on rate-card keys (stable, not display names).
+const SENIOR_RANKS = [
+  'Senior Associate 3', 'Senior Associate 2', 'Senior Associate 1',
+  'Supervising Associate', 'Senior Associate',
+];
+const ASSOC_RANKS = ['Staff 2', 'Associate / Staff', 'Associate'];
+
 // ─── Formatters ───
 const fa = v => v == null || isNaN(v) ? '—'
   : v < 0 ? `($${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
@@ -105,6 +124,7 @@ export default function EngEconomics() {
   const [rates, setRates] = useState(DEFAULT_RATES);
   const rankOrder = Object.keys(rates);
   const rankNames = rankOrder.filter(k => !rates[k]?._divider);
+  const [mixType, setMixType] = useState(DEFAULT_MIX_TYPE);
 
   // Resource rows: [{ rank: 'Partner/Principal', b, e, a }]
   const [rows, setRows] = useState([
@@ -358,152 +378,151 @@ export default function EngEconomics() {
   };
 
   // ─── Auto-allocate from cost allowance ───
-  // Rules (best-effort; skip any that can't apply to current rows):
-  //   1. Partner must have at least 2 hours
-  //   2. Partner + Manager must be >= 20% of total hours
-  //   3. Seniors (S1+S2+S3) combined > Associate/Staff
-  //   4. S1 ~= S2; if S3 present, S3 = 70% of S1
-  // After rules fire, rescale everything proportionally so total cost equals
-  // the cost allowance (since rule-driven reshuffles change blended cost/hr).
+  // Group-based rules (selected via mixType):
+  //   - Partner: 2 hrs if cost allowance permits, else 1 if possible, else 0.
+  //   - Partner + Manager = 20% of total hours.
+  //   - Seniors + Associates = 80% of total hours, split per MIX_PROFILES:
+  //       Standard  55/45 (seniors/associates)
+  //       Associate 40/60
+  //       Senior    60/40
+  //   - Total sized so labour cost == labAllowance.
   const doAutoAlloc = () => {
     if (lk) return;
     if (calc.feeN <= 0) { alert('Enter Agreed Fees first.'); return; }
     if (rows.length === 0) { alert('Add at least one resource row first.'); return; }
-    // Cost allowance is based on TER, matching Reporting Hub.
     const bca = calc.ter * (1 - (+tgt || 0) / 100);
-    // Labour budget inside the cost allowance (excl. tech uplift + expenses).
     const labAllowance = Math.max(0, (bca - calc.bxpN) / (1 + calc.tp));
+    const profile = MIX_PROFILES[mixType] || MIX_PROFILES[DEFAULT_MIX_TYPE];
 
-    // 1) Initial allocation by mix %, sized so labour cost ≈ labAllowance.
-    //    Ranks with mix=0 in the kept rows receive a nominal weight (=1) so
-    //    every row the user kept is staffed. Without this, e.g. having only
-    //    S2+St2 present (both mix=0) would leave them at zero.
-    const rawWeights = rows.map(r => rates[r.rank]?.mix || 0);
-    const anyPositive = rawWeights.some(w => w > 0);
-    const weights = anyPositive ? rawWeights.map(w => w > 0 ? w : 1) : rows.map(() => 1);
-    let totalW = weights.reduce((s, w) => s + w, 0);
-    if (totalW === 0) totalW = rows.length;
-    const hrs = {};
-    rows.forEach((r, i) => {
-      const rk = rates[r.rank];
-      if (!rk) { hrs[r.rank] = 0; return; }
-      const share = weights[i] / totalW;
-      hrs[r.rank] = Math.max(0, (labAllowance * share) / rk.cost);
-    });
+    // Identify which rows belong to which group, in row order
+    const presentRanks = rows.map(r => r.rank);
+    const partnerRank = 'Partner/Principal';
+    const managerRank = 'Manager';
+    const seniorPresent = presentRanks.filter(n => SENIOR_RANKS.includes(n));
+    const assocPresent = presentRanks.filter(n => ASSOC_RANKS.includes(n));
+    const hasPartner = presentRanks.includes(partnerRank);
+    const hasManager = presentRanks.includes(managerRank);
 
-    const has = n => Object.prototype.hasOwnProperty.call(hrs, n);
-    const h = n => hrs[n] || 0;
-    const set = (n, v) => { if (has(n)) hrs[n] = Math.max(0, v); };
+    // Blended cost/hr within each group, weighted by rate-card mix% (falls
+    // back to equal weight if none of the group's rows has a positive mix).
+    const blendedCost = ranks => {
+      if (!ranks.length) return 0;
+      const w = ranks.map(n => rates[n]?.mix || 0);
+      const anyPos = w.some(x => x > 0);
+      const wSum = anyPos ? w.reduce((s, x) => s + x, 0) : ranks.length;
+      if (wSum === 0) return 0;
+      return ranks.reduce((s, n, i) => {
+        const share = anyPos ? (w[i] / wSum) : (1 / ranks.length);
+        return s + share * (rates[n]?.cost || 0);
+      }, 0);
+    };
+    const bSen = blendedCost(seniorPresent);
+    const bAssoc = blendedCost(assocPresent);
 
-    // 2) Rule 4: S1 ≈ S2; if S3 present, S3 = 70% of S1.
-    const seniorRanks = ['Senior Associate 1', 'Senior Associate 2', 'Senior Associate 3']
-      .filter(has);
-    if (seniorRanks.length > 0) {
-      const seniorPool = seniorRanks.reduce((s, n) => s + h(n), 0);
-      const hasS1 = has('Senior Associate 1');
-      const hasS2 = has('Senior Associate 2');
-      const hasS3 = has('Senior Associate 3');
-      let k = 0;
-      if (hasS1) k += 1;
-      if (hasS2) k += 1;
-      if (hasS3) k += 0.7;
-      if (k > 0 && seniorPool > 0) {
-        const s1 = seniorPool / k;
-        if (hasS1) set('Senior Associate 1', s1);
-        if (hasS2) set('Senior Associate 2', s1);
-        if (hasS3) set('Senior Associate 3', s1 * 0.7);
-      }
-    }
-
-    // 3) Rule 3: seniors > associate/staff.
-    //    Split the combined (seniors + AA) pool so seniors just exceed AA
-    //    (51/49). Keeps AA staffed even when seniors start at 0 hours.
-    if (has('Associate / Staff') && seniorRanks.length > 0) {
-      const aa = h('Associate / Staff');
-      const seniorTotal = seniorRanks.reduce((s, n) => s + h(n), 0);
-      if (seniorTotal <= aa) {
-        const combined = seniorTotal + aa;
-        const newSeniorPool = combined * 0.51;
-        const newAA = combined * 0.49;
-        set('Associate / Staff', newAA);
-        if (seniorTotal > 0) {
-          seniorRanks.forEach(n => {
-            const ratio = h(n) / seniorTotal;
-            set(n, newSeniorPool * ratio);
-          });
-        } else {
-          // Seniors all start at 0 — distribute newSeniorPool across them
-          // by mix weight, or evenly if all mixes are 0.
-          const seniorMixes = seniorRanks.map(n => rates[n]?.mix || 0);
-          const mixSum = seniorMixes.reduce((s, m) => s + m, 0);
-          seniorRanks.forEach((n, i) => {
-            const share = mixSum > 0 ? seniorMixes[i] / mixSum : 1 / seniorRanks.length;
-            set(n, newSeniorPool * share);
-          });
-        }
-      }
-    }
-
-    // 4) Rule 2: Partner + Manager >= 20% of total hours.
-    if (has('Partner/Principal') || has('Manager')) {
-      const pmRanks = ['Partner/Principal', 'Manager'].filter(has);
-      const otherRanks = rows.map(r => r.rank).filter(n => !pmRanks.includes(n) && has(n));
-      const total = Object.values(hrs).reduce((s, v) => s + v, 0);
-      const pmTotal = pmRanks.reduce((s, n) => s + h(n), 0);
-      const needed = total * 0.2;
-      if (total > 0 && pmTotal < needed) {
-        const delta = needed - pmTotal;
-        if (pmTotal > 0) {
-          pmRanks.forEach(n => {
-            const ratio = h(n) / pmTotal;
-            set(n, h(n) + delta * ratio);
-          });
-        } else if (pmRanks.length > 0) {
-          const per = delta / pmRanks.length;
-          pmRanks.forEach(n => set(n, h(n) + per));
-        }
-        const otherTotal = otherRanks.reduce((s, n) => s + h(n), 0);
-        if (otherTotal > 0) {
-          otherRanks.forEach(n => {
-            const ratio = h(n) / otherTotal;
-            set(n, Math.max(0, h(n) - delta * ratio));
-          });
-        }
-      }
-    }
-
-    // 5) Rule 1: Partner >= 2 hours (applied BEFORE final rescale so the
-    //    rescale absorbs the floor-induced cost into the other ranks).
-    if (has('Partner/Principal') && h('Partner/Principal') < 2) {
-      set('Partner/Principal', 2);
-    }
-
-    // 6) Post-rule rescale: rules shifted hours between ranks with different
-    //    cost rates (and the Partner floor may have bumped P up), so total
-    //    labour cost has drifted. Rescale non-Partner ranks proportionally so
-    //    total labour cost lands on labAllowance while preserving P>=2.
-    let pinnedLab = 0;
-    let flexLab = 0;
-    rows.forEach(r => {
-      const rk = rates[r.rank]; if (!rk) return;
-      const cost = h(r.rank) * rk.cost;
-      if (r.rank === 'Partner/Principal' && h(r.rank) <= 2) {
-        pinnedLab += cost;
-      } else {
-        flexLab += cost;
-      }
-    });
-    const flexTarget = Math.max(0, labAllowance - pinnedLab);
-    if (flexLab > 0 && flexTarget >= 0) {
-      const scale = flexTarget / flexLab;
-      rows.forEach(r => {
-        if (r.rank === 'Partner/Principal' && h(r.rank) <= 2) return;
-        if (has(r.rank)) set(r.rank, h(r.rank) * scale);
+    // Distribute group pool hours across group members by mix weight
+    // (equal share if all are 0).
+    const distribute = (ranks, poolHrs) => {
+      const w = ranks.map(n => rates[n]?.mix || 0);
+      const anyPos = w.some(x => x > 0);
+      const wSum = anyPos ? w.reduce((s, x) => s + x, 0) : ranks.length;
+      return ranks.map((n, i) => {
+        const share = anyPos ? (w[i] / wSum) : (1 / ranks.length);
+        return [n, poolHrs * share];
       });
+    };
+
+    const costP = rates[partnerRank]?.cost || 0;
+    const costM = rates[managerRank]?.cost || 0;
+
+    // Partner hours: 2 if budget permits (keep min 25% of allowance for
+    // other ranks — heuristic), else 1 if permits, else 0.
+    let partnerHrs = 0;
+    if (hasPartner && costP > 0) {
+      if (labAllowance >= 2 * costP + 0.2 * labAllowance) partnerHrs = 2;
+      else if (labAllowance >= 1 * costP) partnerHrs = 1;
+      else partnerHrs = 0;
+    }
+    const partnerCost = partnerHrs * costP;
+
+    // Combined senior/associate effective cost per "T hour" (where T is total
+    // engagement hours). Seniors+Associates = 80% of T, split by profile.
+    const effSA = 0.8 * (profile.seniorShare * bSen + profile.assocShare * bAssoc);
+    // If manager is present, P+M = 20% of T, so M hours = 0.2T − partnerHrs.
+    // Per-T-hour manager cost = costM × (0.2 − partnerHrs/T); we solve for T.
+    // total_cost = partnerCost + costM * (0.2T − partnerHrs) + T * effSA = labAllowance
+    //   ⇒  T * (0.2 * costM + effSA) = labAllowance − partnerCost + costM * partnerHrs
+    // If no manager, M hours = 0, and Seniors+Associates absorbs the 80%
+    // (partnerHrs drives the 20% share alone, so T = partnerHrs / 0.2 is a
+    // floor; more typically the group constraint is relaxed — we just size T
+    // from labour allowance using effSA and whatever partner cost is).
+    let T = 0;
+    if (hasManager && costM > 0) {
+      const denom = 0.2 * costM + effSA;
+      if (denom > 0) {
+        T = (labAllowance - partnerCost + costM * partnerHrs) / denom;
+      }
+    } else if (effSA > 0) {
+      // No manager: partner is the only fixed rank. Remaining labour = T * effSA
+      // where T is total hours. Seniors+Associates take full 80% of T; partner
+      // and any "orphan" ranks hold the rest.
+      T = (labAllowance - partnerCost) / effSA;
+    } else {
+      // No seniors/associates, no manager — just partner, possibly lone row.
+      // Size T to whatever partner hours we've chosen.
+      T = partnerHrs > 0 ? partnerHrs / 0.2 : 0;
+    }
+    if (!isFinite(T) || T <= 0) {
+      // Degenerate: fall back to proportional mix-weighted distribution
+      T = Math.max(0, labAllowance / Math.max(0.01, blendedCost(presentRanks)));
     }
 
-    // Final: round to integers
-    const newRows = rows.map(r => ({ ...r, b: Math.max(0, Math.round(h(r.rank))), e: 0, a: 0 }));
+    const managerHrs = hasManager ? Math.max(0, 0.2 * T - partnerHrs) : 0;
+    const seniorPool = 0.8 * T * profile.seniorShare;
+    const assocPool = 0.8 * T * profile.assocShare;
+
+    // Build hrs dict
+    const hrs = {};
+    presentRanks.forEach(n => { hrs[n] = 0; });
+    if (hasPartner) hrs[partnerRank] = partnerHrs;
+    if (hasManager) hrs[managerRank] = managerHrs;
+    distribute(seniorPresent, seniorPool).forEach(([n, v]) => { hrs[n] = v; });
+    distribute(assocPresent, assocPool).forEach(([n, v]) => { hrs[n] = v; });
+    // Any rows that don't belong to P/M/Senior/Assoc groups (e.g. Director,
+    // Exec Director, Intern) — leave at 0 unless they're the only row, in
+    // which case just give them all the allowance.
+    const grouped = new Set([partnerRank, managerRank, ...seniorPresent, ...assocPresent]);
+    const orphans = presentRanks.filter(n => !grouped.has(n));
+    if (orphans.length === presentRanks.length) {
+      // All rows are orphans — even split of labAllowance.
+      const cOrphan = blendedCost(orphans);
+      const oT = cOrphan > 0 ? labAllowance / cOrphan : 0;
+      distribute(orphans, oT).forEach(([n, v]) => { hrs[n] = v; });
+    }
+
+    // Final rescale to pin total labour cost to labAllowance
+    // (partner stays pinned; everything else scales).
+    const currentLab = presentRanks.reduce((s, n) => s + hrs[n] * (rates[n]?.cost || 0), 0);
+    if (currentLab > 0) {
+      const scale = labAllowance / currentLab;
+      // If scaling would lower partner below min, keep partner pinned.
+      if (partnerHrs >= 1) {
+        const pinnedCost = partnerHrs * costP;
+        const flexLab = currentLab - pinnedCost;
+        const flexTarget = Math.max(0, labAllowance - pinnedCost);
+        if (flexLab > 0) {
+          const flexScale = flexTarget / flexLab;
+          presentRanks.forEach(n => {
+            if (n === partnerRank) return;
+            hrs[n] = hrs[n] * flexScale;
+          });
+        }
+      } else {
+        presentRanks.forEach(n => { hrs[n] = hrs[n] * scale; });
+      }
+    }
+
+    // Round and write back
+    const newRows = rows.map(r => ({ ...r, b: Math.max(0, Math.round(hrs[r.rank] || 0)), e: 0, a: 0 }));
     setRows(newRows);
   };
 
@@ -804,10 +823,28 @@ export default function EngEconomics() {
           {!lk && (
             <div style={{ marginTop: 14 }}>
               <button onClick={addRow} style={dashedBtn()}>+ Add resource</button>
-              <button onClick={doAutoAlloc} style={{
-                ...dashedBtn(), marginTop: 6,
-                borderStyle: 'solid', borderColor: T.accent, color: T.accent,
-              }}>Auto-allocate from cost allowance</button>
+              <div style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'stretch' }}>
+                <button onClick={doAutoAlloc} style={{
+                  ...dashedBtn(), margin: 0, flex: 1,
+                  borderStyle: 'solid', borderColor: T.accent, color: T.accent,
+                }}>Auto-allocate from cost allowance</button>
+                <select
+                  value={mixType}
+                  onChange={e => setMixType(e.target.value)}
+                  title="Senior/Associate split profile"
+                  style={{
+                    fontSize: 12, padding: '0 8px',
+                    borderRadius: T.radiusSm,
+                    border: `1px solid ${T.border}`,
+                    background: T.white, color: T.text,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {MIX_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
