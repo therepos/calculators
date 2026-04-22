@@ -28,7 +28,7 @@ const RATE_CARDS = {
     'Senior Manager':          { name: 'Senior Manager 1',       nsr: 342,  cost: 213,  abbr: 'SM',  mix: 4  },
     'Manager':                 { name: 'Manager',                nsr: 223,  cost: 128,  abbr: 'M',   mix: 12 },
     'Senior Associate 3':      { name: 'Senior Associate 3',     nsr: 176,  cost: 92,   abbr: 'S3',  mix: 0  },
-    'Senior Associate 2':      { name: 'Senior Associate 2',     nsr: 159,  cost: 82,   abbr: 'S2',  mix: 0  },
+    'Senior Associate 2':      { name: 'Senior Associate 2',     nsr: 159,  cost: 84.96, abbr: 'S2',  mix: 0  },
     'Senior Associate 1':      { name: 'Senior Associate 1',     nsr: 138,  cost: 79,   abbr: 'S1',  mix: 21 },
     'Staff 2':                 { name: 'Staff 2',                nsr: 119,  cost: 64,   abbr: 'A2',  mix: 0  },
     'Associate / Staff':       { name: 'Staff 1',                nsr: 93,   cost: 64,   abbr: 'A1',  mix: 58 },
