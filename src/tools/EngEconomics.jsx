@@ -884,15 +884,15 @@ export default function EngEconomics() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 4, columnGap: 16 }}>
                   <span>Estimated Budget NSR <span style={{ color: T.text3 }}>(enter in Mercury)</span></span>
-                  <strong style={{ color: T.text, ...mono }}>{fa(calc.bgtNsrEst)}</strong>
+                  <strong style={{ color: T.text, fontFamily: mono }}>{fa(calc.bgtNsrEst)}</strong>
                   <span>Implied Budget EAF</span>
-                  <strong style={{ color: dot, ...mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% — {label}</strong>
+                  <strong style={{ color: dot, fontFamily: mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% — {label}</strong>
                   <span>Mercury Budget ANSR target <span style={{ color: T.text3 }}>(= Fee)</span></span>
-                  <span style={{ color: T.text, ...mono }}>{fa(calc.feeN)}</span>
+                  <span style={{ color: T.text, fontFamily: mono }}>{fa(calc.feeN)}</span>
                   {lk && calc.unbillable > 0 && (
                     <>
                       <span style={{ color: T.red }}>Unbillable recognition <span style={{ color: T.text3 }}>(NUI writedown risk)</span></span>
-                      <strong style={{ color: T.red, ...mono }}>{fa(calc.unbillable)}</strong>
+                      <strong style={{ color: T.red, fontFamily: mono }}>{fa(calc.unbillable)}</strong>
                     </>
                   )}
                 </div>
