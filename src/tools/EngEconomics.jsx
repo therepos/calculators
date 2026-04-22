@@ -380,16 +380,20 @@ export default function EngEconomics() {
     // Labour budget inside the cost allowance (excl. tech uplift + expenses).
     const labAllowance = Math.max(0, (bca - calc.bxpN) / (1 + calc.tp));
 
-    // 1) Initial allocation by mix %, sized so labour cost ≈ labAllowance
-    const weights = rows.map(r => rates[r.rank]?.mix || 0);
+    // 1) Initial allocation by mix %, sized so labour cost ≈ labAllowance.
+    //    Ranks with mix=0 in the kept rows receive a nominal weight (=1) so
+    //    every row the user kept is staffed. Without this, e.g. having only
+    //    S2+St2 present (both mix=0) would leave them at zero.
+    const rawWeights = rows.map(r => rates[r.rank]?.mix || 0);
+    const anyPositive = rawWeights.some(w => w > 0);
+    const weights = anyPositive ? rawWeights.map(w => w > 0 ? w : 1) : rows.map(() => 1);
     let totalW = weights.reduce((s, w) => s + w, 0);
-    const useEqual = totalW === 0;
-    if (useEqual) totalW = rows.length;
+    if (totalW === 0) totalW = rows.length;
     const hrs = {};
     rows.forEach((r, i) => {
       const rk = rates[r.rank];
       if (!rk) { hrs[r.rank] = 0; return; }
-      const share = (useEqual ? 1 : weights[i]) / totalW;
+      const share = weights[i] / totalW;
       hrs[r.rank] = Math.max(0, (labAllowance * share) / rk.cost);
     });
 
