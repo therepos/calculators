@@ -269,15 +269,22 @@ export default function EngEconomics() {
       const costPerHr = bgtSum.c / bH;           // blended labour cost per hour
       const nsrPerHr  = bgtSum.n / bH;           // blended NSR per hour
       if (feeN > 0) {
-        // Cost ceiling: hours at which labour+tech+exp == TER × (1 − target%)
-        // bca = TER × (1 − target%); solve for labour: labour × (1+tp) + bxpN = bca
         const labAllowance = Math.max(0, (bca - bxpN) / (1 + tp));
         maxHrsAtTarget = costPerHr > 0 ? labAllowance / costPerHr : 0;
-        // Billable ceiling: hours at which NSR equals Fee (EAF = 0)
         maxHrsAtEafZero = nsrPerHr > 0 ? feeN / nsrPerHr : 0;
         hrsHeadroom = maxHrsAtTarget - bH;
       }
     }
+
+    // 6) Writedown indicators
+    //   plannedWritedown: if Budget NSR > Fee, locking this in creates a
+    //     structural NUI writedown equal to (Budget NSR - Fee) grossed up
+    //     by EAF. Simpler to state as: how much of planned NSR exceeds Fee.
+    //   actualWritedown: post-lock, how much of recognised ANSR exceeds Fee.
+    //   maxBgtNsrSafe: the Budget NSR ceiling = Fee (above this, EAF < 0).
+    const plannedWritedown = Math.max(0, bgtNsrEst - feeN);
+    const actualWritedown = Math.max(0, aRec - feeN);
+    const maxBgtNsrSafe = feeN; // Fee itself — above it, EAF goes negative
 
     return {
       feeN, bxpN, cxpN, bfN, bbxN, tgtP, tp,
@@ -290,6 +297,7 @@ export default function EngEconomics() {
       // Mercury pre-flight
       bgtNsrEst, bgtEafEst, eafHealth, unbillable,
       maxHrsAtTarget, maxHrsAtEafZero, hrsHeadroom,
+      plannedWritedown, actualWritedown, maxBgtNsrSafe,
     };
   }, [rows, fee, bxp, cxp, bf, bbx, tgt, techP, lk, ed, snap, rates]);
 
@@ -360,15 +368,18 @@ export default function EngEconomics() {
   //   2. Partner + Manager must be >= 20% of total hours
   //   3. Seniors (S1+S2+S3) combined > Associate/Staff
   //   4. S1 ~= S2; if S3 present, S3 = 70% of S1
+  // After rules fire, rescale everything proportionally so total cost equals
+  // the cost allowance (since rule-driven reshuffles change blended cost/hr).
   const doAutoAlloc = () => {
     if (lk) return;
     if (calc.feeN <= 0) { alert('Enter Agreed Fees first.'); return; }
     if (rows.length === 0) { alert('Add at least one resource row first.'); return; }
-    // Cost allowance is based on TER (Fee + billable expenses), matching
-    // Reporting Hub's margin-% denominator.
+    // Cost allowance is based on TER, matching Reporting Hub.
     const bca = calc.ter * (1 - (+tgt || 0) / 100);
+    // Labour budget inside the cost allowance (excl. tech uplift + expenses).
+    const labAllowance = Math.max(0, (bca - calc.bxpN) / (1 + calc.tp));
 
-    // 1) Initial allocation by mix %, scaled so total cost = bca
+    // 1) Initial allocation by mix %, sized so labour cost ≈ labAllowance
     const weights = rows.map(r => rates[r.rank]?.mix || 0);
     let totalW = weights.reduce((s, w) => s + w, 0);
     const useEqual = totalW === 0;
@@ -378,16 +389,14 @@ export default function EngEconomics() {
       const rk = rates[r.rank];
       if (!rk) { hrs[r.rank] = 0; return; }
       const share = (useEqual ? 1 : weights[i]) / totalW;
-      hrs[r.rank] = Math.max(0, Math.round((bca * share) / rk.cost));
+      hrs[r.rank] = Math.max(0, (labAllowance * share) / rk.cost);
     });
 
     const has = n => Object.prototype.hasOwnProperty.call(hrs, n);
     const h = n => hrs[n] || 0;
-    const set = (n, v) => { if (has(n)) hrs[n] = Math.max(0, Math.round(v)); };
+    const set = (n, v) => { if (has(n)) hrs[n] = Math.max(0, v); };
 
     // 2) Rule 4: S1 ≈ S2; if S3 present, S3 = 70% of S1.
-    //    Preserve the combined senior pool from the mix-based allocation,
-    //    then redistribute across whichever senior ranks are present.
     const seniorRanks = ['Senior Associate 1', 'Senior Associate 2', 'Senior Associate 3']
       .filter(has);
     if (seniorRanks.length > 0) {
@@ -395,8 +404,6 @@ export default function EngEconomics() {
       const hasS1 = has('Senior Associate 1');
       const hasS2 = has('Senior Associate 2');
       const hasS3 = has('Senior Associate 3');
-      // Express the pool as multiples of S1: S1 + S2 + S3 = k*S1
-      //   S2 contributes 1 (since S2 ≈ S1), S3 contributes 0.7
       let k = 0;
       if (hasS1) k += 1;
       if (hasS2) k += 1;
@@ -404,49 +411,40 @@ export default function EngEconomics() {
       if (k > 0 && seniorPool > 0) {
         const s1 = seniorPool / k;
         if (hasS1) set('Senior Associate 1', s1);
-        if (hasS2) set('Senior Associate 2', s1); // ≈ S1
+        if (hasS2) set('Senior Associate 2', s1);
         if (hasS3) set('Senior Associate 3', s1 * 0.7);
       }
     }
 
     // 3) Rule 3: seniors > associate/staff.
-    //    If violated, shift hours from AA into seniors (keeps job cost ≈ same-ish;
-    //    we preserve the existing senior internal ratios from rule 4).
     if (has('Associate / Staff') && seniorRanks.length > 0) {
       const aa = h('Associate / Staff');
       const seniorTotal = seniorRanks.reduce((s, n) => s + h(n), 0);
       if (seniorTotal <= aa) {
-        // Target: seniors = aa + 1 (strictly greater). Split delta from AA.
         const target = aa + 1;
         const delta = target - seniorTotal;
-        // Move `delta` hours from AA to seniors, distributed by current ratio.
         const newAA = Math.max(0, aa - delta);
         set('Associate / Staff', newAA);
-        // Bump seniors proportionally
         if (seniorTotal > 0) {
           seniorRanks.forEach(n => {
             const ratio = h(n) / seniorTotal;
             set(n, h(n) + delta * ratio);
           });
         } else {
-          // All senior buckets were 0 — drop it all into S1 (or first present)
           set(seniorRanks[0], delta);
         }
       }
     }
 
     // 4) Rule 2: Partner + Manager >= 20% of total hours.
-    //    If short, top up by scaling P+M up proportionally, and trim the rest
-    //    proportionally to preserve the total-hours envelope.
     if (has('Partner/Principal') || has('Manager')) {
       const pmRanks = ['Partner/Principal', 'Manager'].filter(has);
       const otherRanks = rows.map(r => r.rank).filter(n => !pmRanks.includes(n) && has(n));
       const total = Object.values(hrs).reduce((s, v) => s + v, 0);
       const pmTotal = pmRanks.reduce((s, n) => s + h(n), 0);
-      const needed = Math.ceil(total * 0.2);
+      const needed = total * 0.2;
       if (total > 0 && pmTotal < needed) {
         const delta = needed - pmTotal;
-        // Add delta to P+M proportionally (if both have 0, split evenly)
         if (pmTotal > 0) {
           pmRanks.forEach(n => {
             const ratio = h(n) / pmTotal;
@@ -456,7 +454,6 @@ export default function EngEconomics() {
           const per = delta / pmRanks.length;
           pmRanks.forEach(n => set(n, h(n) + per));
         }
-        // Remove delta from "other" ranks proportionally
         const otherTotal = otherRanks.reduce((s, n) => s + h(n), 0);
         if (otherTotal > 0) {
           otherRanks.forEach(n => {
@@ -467,12 +464,26 @@ export default function EngEconomics() {
       }
     }
 
-    // 5) Rule 1: Partner >= 2 hours (final pass so earlier rules don't trample it)
+    // 5) Post-rule rescale: rules shifted hours between ranks with different
+    //    cost rates, so total labour cost has drifted. Rescale proportionally
+    //    so total labour cost lands back on labAllowance. This is what keeps
+    //    the margin target (and prevents the NSR-vs-Fee overrun).
+    const currentLabour = rows.reduce((s, r) => {
+      const rk = rates[r.rank]; if (!rk) return s;
+      return s + h(r.rank) * rk.cost;
+    }, 0);
+    if (currentLabour > 0 && labAllowance > 0) {
+      const scale = labAllowance / currentLabour;
+      Object.keys(hrs).forEach(n => { hrs[n] = h(n) * scale; });
+    }
+
+    // 6) Rule 1: Partner >= 2 hours (hard floor, applied last).
     if (has('Partner/Principal') && h('Partner/Principal') < 2) {
       set('Partner/Principal', 2);
     }
 
-    const newRows = rows.map(r => ({ ...r, b: h(r.rank), e: 0, a: 0 }));
+    // Final: round to integers
+    const newRows = rows.map(r => ({ ...r, b: Math.max(0, Math.round(h(r.rank))), e: 0, a: 0 }));
     setRows(newRows);
   };
 
@@ -927,14 +938,22 @@ export default function EngEconomics() {
                 }}>
                   <span>Estimated Budget NSR <span style={{ fontSize: 11 }}>(enter in Mercury)</span></span>
                   <span style={{ color: T.text2, fontFamily: mono }}>{fa(calc.bgtNsrEst)}</span>
+                  <span>Max Budget NSR without writedown <span style={{ fontSize: 11 }}>(= Fee)</span></span>
+                  <span style={{ color: T.text2, fontFamily: mono }}>{fa(calc.maxBgtNsrSafe)}</span>
                   <span>Implied Budget EAF</span>
                   <span style={{ color: dot, fontFamily: mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% · {eafLabel}</span>
                   <span>NSR = Fee ceiling <span style={{ fontSize: 11 }}>(EAF hits 0%)</span></span>
                   <span style={{ color: T.text2, fontFamily: mono }}>{fmtN(eafZero)} hrs</span>
-                  {lk && calc.unbillable > 0 && (
+                  {!lk && calc.plannedWritedown > 0 && (
                     <>
-                      <span style={{ color: T.red, fontSize: 12 }}>Unbillable recognition <span style={{ fontSize: 11 }}>(writedown risk)</span></span>
-                      <span style={{ color: T.red, fontFamily: mono }}>{fa(calc.unbillable)}</span>
+                      <span style={{ color: T.red, fontSize: 12 }}>Est. writedown at lock <span style={{ fontSize: 11 }}>(NSR − Fee)</span></span>
+                      <span style={{ color: T.red, fontFamily: mono }}>{fa(calc.plannedWritedown)}</span>
+                    </>
+                  )}
+                  {lk && calc.actualWritedown > 0 && (
+                    <>
+                      <span style={{ color: T.red, fontSize: 12 }}>Actual writedown risk <span style={{ fontSize: 11 }}>(Recog. ANSR − Fee)</span></span>
+                      <span style={{ color: T.red, fontFamily: mono }}>{fa(calc.actualWritedown)}</span>
                     </>
                   )}
                 </div>
@@ -1101,6 +1120,8 @@ export default function EngEconomics() {
             <li>Red: &lt;0% or &gt;40% — likely NSR miscalibration</li>
           </ul>
           <p style={{ marginTop: 10 }}><strong>Unbillable recognition</strong> = max(0, Recognised ANSR − Fee). Revenue recognised from hours charged that exceeds the billable fee ceiling. Eventually unwinds as a writedown.</p>
+          <p style={{ marginTop: 10 }}><strong>Est. writedown at lock</strong> = max(0, Budget NSR − Fee). Shown pre-lock when the planned mix alone exceeds the Fee ceiling — locking the budget in that state guarantees an eventual writedown.</p>
+          <p style={{ marginTop: 10 }}><strong>Max Budget NSR without writedown</strong> = Fee. Any Budget NSR above Fee produces a negative EAF and sets up writedown risk.</p>
         </div>
 
         <div style={{
