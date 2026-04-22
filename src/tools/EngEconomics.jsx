@@ -244,6 +244,24 @@ export default function EngEconomics() {
     const actMP = ter > 0 ? actMgn / ter : 0;
     const marginDelta = (lk && feeN > 0 && aH > 0) ? actMP - snap.bMP : null;
 
+    // ─── Mercury pre-flight (budget quality checks) ───
+    // 1) Estimated Budget NSR: the NSR the user should enter in Mercury,
+    //    computed bottom-up from planned hours × rate-card NSR rate.
+    const bgtNsrEst = bgtSum.n;
+    // 2) Implied Budget EAF from fee vs the estimated NSR. Pre-lock this
+    //    equals calc.eaf; computed independently so it's stable post-lock too.
+    const bgtEafEst = (bgtNsrEst > 0 && feeN > 0) ? (feeN / bgtNsrEst) - 1 : 0;
+    // 3) EAF health thresholds: Green 0–25%, Amber 25–40%, Red <0% or >40%
+    let eafHealth = 'none';
+    if (feeN > 0 && bgtNsrEst > 0) {
+      if (bgtEafEst < 0 || bgtEafEst > 0.40) eafHealth = 'red';
+      else if (bgtEafEst > 0.25) eafHealth = 'amber';
+      else eafHealth = 'green';
+    }
+    // 4) Unbillable recognition: how much of aRec exceeds the Fee ceiling.
+    //    Phantom revenue that will unwind as a writedown.
+    const unbillable = Math.max(0, aRec - feeN);
+
     return {
       feeN, bxpN, cxpN, bfN, bbxN, tgtP, tp,
       bgtSum, commitSum, actSum,
@@ -252,6 +270,8 @@ export default function EngEconomics() {
       eaf, nuiEaf, aRec, nui, dispANSR,
       active, bC, bM, bMP,
       actMgn, actMP, marginDelta,
+      // Mercury pre-flight
+      bgtNsrEst, bgtEafEst, eafHealth, unbillable,
     };
   }, [rows, fee, bxp, cxp, bf, bbx, tgt, techP, lk, ed, snap, rates]);
 
@@ -265,6 +285,16 @@ export default function EngEconomics() {
   // ─── Stage transitions ───
   const doSetBudget = () => {
     if (lk || calc.bH === 0) return;
+    // Mercury pre-flight guard: block on red EAF unless user confirms
+    if (calc.eafHealth === 'red') {
+      const pct = (calc.bgtEafEst * 100).toFixed(1);
+      const msg = `Implied Budget EAF is ${pct}% — outside the healthy 0–40% range.\n\n` +
+        `This usually means Budget NSR is miscalibrated vs Fee. If you lock the ` +
+        `budget now, every actual hour will be grossed-up by this EAF and may ` +
+        `produce unbillable revenue recognition (NUI writedown risk).\n\n` +
+        `Proceed anyway?`;
+      if (!confirm(msg)) return;
+    }
     const b = calc.bgtSum;
     const tp = calc.tp;
     const bCost = b.c + b.c * tp + calc.bxpN;
@@ -835,6 +865,53 @@ export default function EngEconomics() {
             valueColor={calc.bM < 0 ? T.red : undefined}
             emphasis />
 
+          {/* Mercury pre-flight — checks the budget before it goes into SAP */}
+          {calc.bH > 0 && calc.feeN > 0 && (() => {
+            const h = calc.eafHealth;
+            const dot = h === 'green' ? T.green : h === 'amber' ? T.amber : h === 'red' ? T.red : T.text3;
+            const label = h === 'green' ? 'Healthy' : h === 'amber' ? 'High — review mix' : h === 'red' ? 'Out of range — likely NSR error' : '—';
+            return (
+              <div style={{
+                marginTop: 14, padding: '12px 14px',
+                background: h === 'red' ? '#FEF2F2' : h === 'amber' ? '#FFFBEB' : T.panelBg || '#F8FAFC',
+                border: `1px solid ${h === 'red' ? '#FECACA' : h === 'amber' ? '#FDE68A' : T.border}`,
+                borderRadius: T.radius, fontSize: 13, color: T.text2,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block' }} />
+                  <strong style={{ color: T.text, fontSize: 13 }}>Mercury pre-flight</strong>
+                  <span style={{ color: T.text3, fontSize: 12 }}>checks before locking budget</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 4, columnGap: 16 }}>
+                  <span>Estimated Budget NSR <span style={{ color: T.text3 }}>(enter in Mercury)</span></span>
+                  <strong style={{ color: T.text, ...mono }}>{fa(calc.bgtNsrEst)}</strong>
+                  <span>Implied Budget EAF</span>
+                  <strong style={{ color: dot, ...mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% — {label}</strong>
+                  <span>Mercury Budget ANSR target <span style={{ color: T.text3 }}>(= Fee)</span></span>
+                  <span style={{ color: T.text, ...mono }}>{fa(calc.feeN)}</span>
+                  {lk && calc.unbillable > 0 && (
+                    <>
+                      <span style={{ color: T.red }}>Unbillable recognition <span style={{ color: T.text3 }}>(NUI writedown risk)</span></span>
+                      <strong style={{ color: T.red, ...mono }}>{fa(calc.unbillable)}</strong>
+                    </>
+                  )}
+                </div>
+                {h === 'red' && !lk && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
+                    Fee ÷ Budget NSR implies a {(calc.bgtEafEst * 100).toFixed(1)}% EAF. Healthy range is 0–40%.
+                    Re-check planned hours by rank or confirm the fee is genuinely premium before locking.
+                  </div>
+                )}
+                {h === 'amber' && !lk && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.amberVal, lineHeight: 1.5 }}>
+                    EAF is elevated ({(calc.bgtEafEst * 100).toFixed(1)}%). Premium engagements can sit here;
+                    confirm mix is realistic.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <Divider />
 
           <SectionLabel color={T.blueSec}>Project cost</SectionLabel>
@@ -970,6 +1047,15 @@ export default function EngEconomics() {
             <li>NUI &lt; 0 → billed ahead of work performed</li>
           </ul>
           <p style={{ marginTop: 10 }}><strong>Cost allowance</strong> = TER × (1 − Target Margin%).</p>
+          <p style={{ marginTop: 14, color: T.text }}><strong>Mercury pre-flight</strong></p>
+          <p style={{ marginTop: 6 }}><strong>Estimated Budget NSR</strong> = Σ (Planned Hours × NSR Rate). This is the Budget NSR to enter in Mercury — it is <em>not</em> derived from Fee or Target Margin.</p>
+          <p style={{ marginTop: 10 }}><strong>Implied Budget EAF</strong> = (Fee ÷ Estimated Budget NSR) − 1. A common error is back-calculating Budget NSR from Fee × (1 − Margin%), which inflates EAF and causes every actual hour to be over-recognised, producing unbillable revenue.</p>
+          <ul style={{ marginTop: 6, paddingLeft: 22, color: T.text3 }}>
+            <li>Green: 0–25% — healthy</li>
+            <li>Amber: 25–40% — elevated, confirm mix</li>
+            <li>Red: &lt;0% or &gt;40% — likely NSR miscalibration</li>
+          </ul>
+          <p style={{ marginTop: 10 }}><strong>Unbillable recognition</strong> = max(0, Recognised ANSR − Fee). Revenue recognised from hours charged that exceeds the billable fee ceiling. Eventually unwinds as a writedown.</p>
         </div>
 
         <div style={{
