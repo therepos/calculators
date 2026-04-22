@@ -418,21 +418,30 @@ export default function EngEconomics() {
     }
 
     // 3) Rule 3: seniors > associate/staff.
+    //    Split the combined (seniors + AA) pool so seniors just exceed AA
+    //    (51/49). Keeps AA staffed even when seniors start at 0 hours.
     if (has('Associate / Staff') && seniorRanks.length > 0) {
       const aa = h('Associate / Staff');
       const seniorTotal = seniorRanks.reduce((s, n) => s + h(n), 0);
       if (seniorTotal <= aa) {
-        const target = aa + 1;
-        const delta = target - seniorTotal;
-        const newAA = Math.max(0, aa - delta);
+        const combined = seniorTotal + aa;
+        const newSeniorPool = combined * 0.51;
+        const newAA = combined * 0.49;
         set('Associate / Staff', newAA);
         if (seniorTotal > 0) {
           seniorRanks.forEach(n => {
             const ratio = h(n) / seniorTotal;
-            set(n, h(n) + delta * ratio);
+            set(n, newSeniorPool * ratio);
           });
         } else {
-          set(seniorRanks[0], delta);
+          // Seniors all start at 0 — distribute newSeniorPool across them
+          // by mix weight, or evenly if all mixes are 0.
+          const seniorMixes = seniorRanks.map(n => rates[n]?.mix || 0);
+          const mixSum = seniorMixes.reduce((s, m) => s + m, 0);
+          seniorRanks.forEach((n, i) => {
+            const share = mixSum > 0 ? seniorMixes[i] / mixSum : 1 / seniorRanks.length;
+            set(n, newSeniorPool * share);
+          });
         }
       }
     }
