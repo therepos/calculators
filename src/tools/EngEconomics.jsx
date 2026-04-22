@@ -75,8 +75,8 @@ const ETC_COLOR = { bg: '#A32D2D', bgL: '#E24B4A' };
 const HPW = 40, COLS = 12;
 
 // ─── Mix profiles for auto-allocate ───
-// Rules common to all: Partner >= 1 (2 if possible), Partner + Manager = 20%
-// of total hours. Remaining 80% splits between seniors and associates.
+// Managerial block (P + D + SM + M grades) = 20% of total hours by default.
+// Seniors + Associates split the remaining 80% per the profile.
 const MIX_PROFILES = {
   Standard:  { seniorShare: 0.55, assocShare: 0.45 },
   Associate: { seniorShare: 0.40, assocShare: 0.60 },
@@ -85,13 +85,20 @@ const MIX_PROFILES = {
 const MIX_TYPES = Object.keys(MIX_PROFILES);
 const DEFAULT_MIX_TYPE = 'Standard';
 
-// Which ranks count as seniors vs associates for the mix split.
-// Based on rate-card keys (stable, not display names).
+// Rank groupings (based on rate-card keys — stable, not display names).
+const PARTNER_RANKS = ['Partner 3', 'Partner 2', 'Partner/Principal'];
+const DSM_RANKS = [
+  'Exec Director 1', 'Director', 'Asso Director', 'Asst Director',
+  'Senior Manager 2', 'Senior Manager',
+  'Manager',
+];
 const SENIOR_RANKS = [
   'Senior Associate 3', 'Senior Associate 2', 'Senior Associate 1',
   'Supervising Associate', 'Senior Associate',
 ];
 const ASSOC_RANKS = ['Staff 2', 'Associate / Staff', 'Associate'];
+const PARTNER_TARGET_HRS = 2;  // try for 2 hrs of partner time if budget permits
+const MANAGERIAL_SHARE = 0.2;  // P + DSM = 20% of total hours (default rule)
 
 // ─── Formatters ───
 const fa = v => v == null || isNaN(v) ? '—'
@@ -384,13 +391,16 @@ export default function EngEconomics() {
   };
 
   // ─── Auto-allocate from cost allowance ───
-  // Group-based rules (selected via mixType):
-  //   - Partner: 2 hrs if cost allowance permits, else 1 if possible, else 0.
-  //   - Partner + Manager = 20% of total hours.
-  //   - Seniors + Associates = 80% of total hours, split per MIX_PROFILES:
-  //       Standard  55/45 (seniors/associates)
-  //       Associate 40/60
-  //       Senior    60/40
+  // Rules:
+  //   - Any row with BGT > 0 is treated as user-locked (fixed). Auto-allocate
+  //     fills only rows at 0. This lets the user pin specific grades (e.g.
+  //     Partner = 2, Manager = 16) and have the app distribute the rest.
+  //   - Partner (if fillable): target 2 hrs; fallback 1; else 0.
+  //   - If NO managerial rank is user-locked: Managerial block (P + DSM) =
+  //     20% of total hours, distributed pyramid-style by mix %.
+  //   - If ANY managerial rank is user-locked: the 20% rule is skipped —
+  //     fillable ranks just absorb the remaining labour allowance, with
+  //     seniors/associates split per the selected profile.
   //   - Total sized so labour cost == labAllowance.
   const doAutoAlloc = () => {
     if (lk) return;
@@ -400,17 +410,30 @@ export default function EngEconomics() {
     const labAllowance = Math.max(0, (bca - calc.bxpN) / (1 + calc.tp));
     const profile = MIX_PROFILES[mixType] || MIX_PROFILES[DEFAULT_MIX_TYPE];
 
-    // Identify which rows belong to which group, in row order
-    const presentRanks = rows.map(r => r.rank);
-    const partnerRank = 'Partner/Principal';
-    const managerRank = 'Manager';
-    const seniorPresent = presentRanks.filter(n => SENIOR_RANKS.includes(n));
-    const assocPresent = presentRanks.filter(n => ASSOC_RANKS.includes(n));
-    const hasPartner = presentRanks.includes(partnerRank);
-    const hasManager = presentRanks.includes(managerRank);
+    // Which rows are user-locked (any BGT > 0). Locked rows keep their value.
+    const lockedRanks = rows.filter(r => (r.b || 0) > 0).map(r => r.rank);
+    const lockedSet = new Set(lockedRanks);
+    const lockedLabCost = rows.reduce(
+      (s, r) => s + (lockedSet.has(r.rank) ? (r.b || 0) * (rates[r.rank]?.cost || 0) : 0), 0);
+    const remainingLab = Math.max(0, labAllowance - lockedLabCost);
 
-    // Blended cost/hr within each group, weighted by rate-card mix% (falls
-    // back to equal weight if none of the group's rows has a positive mix).
+    // Filter present ranks by group AND whether they're fillable (not locked).
+    const fillable = rows.filter(r => !lockedSet.has(r.rank)).map(r => r.rank);
+    const fillableSet = new Set(fillable);
+    const filter = list => list.filter(n => fillableSet.has(n));
+
+    const partnerFill = filter(rows.map(r => r.rank).filter(n => PARTNER_RANKS.includes(n)));
+    const dsmFill     = filter(rows.map(r => r.rank).filter(n => DSM_RANKS.includes(n)));
+    const seniorFill  = filter(rows.map(r => r.rank).filter(n => SENIOR_RANKS.includes(n)));
+    const assocFill   = filter(rows.map(r => r.rank).filter(n => ASSOC_RANKS.includes(n)));
+
+    // Did the user lock ANY managerial (P or DSM) rank?
+    const anyManagerialLocked = rows.some(
+      r => lockedSet.has(r.rank) &&
+        (PARTNER_RANKS.includes(r.rank) || DSM_RANKS.includes(r.rank))
+    );
+
+    // Blended cost per hour across a group.
     const blendedCost = ranks => {
       if (!ranks.length) return 0;
       const w = ranks.map(n => rates[n]?.mix || 0);
@@ -422,12 +445,9 @@ export default function EngEconomics() {
         return s + share * (rates[n]?.cost || 0);
       }, 0);
     };
-    const bSen = blendedCost(seniorPresent);
-    const bAssoc = blendedCost(assocPresent);
-
-    // Distribute group pool hours across group members by mix weight
-    // (equal share if all are 0).
+    // Distribute a pool of hours across a group by mix weight.
     const distribute = (ranks, poolHrs) => {
+      if (!ranks.length || poolHrs <= 0) return [];
       const w = ranks.map(n => rates[n]?.mix || 0);
       const anyPos = w.some(x => x > 0);
       const wSum = anyPos ? w.reduce((s, x) => s + x, 0) : ranks.length;
@@ -437,98 +457,100 @@ export default function EngEconomics() {
       });
     };
 
-    const costP = rates[partnerRank]?.cost || 0;
-    const costM = rates[managerRank]?.cost || 0;
+    const bPartner = blendedCost(partnerFill);
+    const bDSM = blendedCost(dsmFill);
+    const bSen = blendedCost(seniorFill);
+    const bAssoc = blendedCost(assocFill);
+    const effSA = profile.seniorShare * bSen + profile.assocShare * bAssoc;
 
-    // Partner hours: 2 if budget permits (keep min 25% of allowance for
-    // other ranks — heuristic), else 1 if permits, else 0.
-    let partnerHrs = 0;
-    if (hasPartner && costP > 0) {
-      if (labAllowance >= 2 * costP + 0.2 * labAllowance) partnerHrs = 2;
-      else if (labAllowance >= 1 * costP) partnerHrs = 1;
-      else partnerHrs = 0;
-    }
-    const partnerCost = partnerHrs * costP;
-
-    // Combined senior/associate effective cost per "T hour" (where T is total
-    // engagement hours). Seniors+Associates = 80% of T, split by profile.
-    const effSA = 0.8 * (profile.seniorShare * bSen + profile.assocShare * bAssoc);
-    // If manager is present, P+M = 20% of T, so M hours = 0.2T − partnerHrs.
-    // Per-T-hour manager cost = costM × (0.2 − partnerHrs/T); we solve for T.
-    // total_cost = partnerCost + costM * (0.2T − partnerHrs) + T * effSA = labAllowance
-    //   ⇒  T * (0.2 * costM + effSA) = labAllowance − partnerCost + costM * partnerHrs
-    // If no manager, M hours = 0, and Seniors+Associates absorbs the 80%
-    // (partnerHrs drives the 20% share alone, so T = partnerHrs / 0.2 is a
-    // floor; more typically the group constraint is relaxed — we just size T
-    // from labour allowance using effSA and whatever partner cost is).
-    let T = 0;
-    if (hasManager && costM > 0) {
-      const denom = 0.2 * costM + effSA;
-      if (denom > 0) {
-        T = (labAllowance - partnerCost + costM * partnerHrs) / denom;
-      }
-    } else if (effSA > 0) {
-      // No manager: partner is the only fixed rank. Remaining labour = T * effSA
-      // where T is total hours. Seniors+Associates take full 80% of T; partner
-      // and any "orphan" ranks hold the rest.
-      T = (labAllowance - partnerCost) / effSA;
-    } else {
-      // No seniors/associates, no manager — just partner, possibly lone row.
-      // Size T to whatever partner hours we've chosen.
-      T = partnerHrs > 0 ? partnerHrs / 0.2 : 0;
-    }
-    if (!isFinite(T) || T <= 0) {
-      // Degenerate: fall back to proportional mix-weighted distribution
-      T = Math.max(0, labAllowance / Math.max(0.01, blendedCost(presentRanks)));
-    }
-
-    const managerHrs = hasManager ? Math.max(0, 0.2 * T - partnerHrs) : 0;
-    const seniorPool = 0.8 * T * profile.seniorShare;
-    const assocPool = 0.8 * T * profile.assocShare;
-
-    // Build hrs dict
+    // Start with locked rows held; build hrs for fillable rows.
     const hrs = {};
-    presentRanks.forEach(n => { hrs[n] = 0; });
-    if (hasPartner) hrs[partnerRank] = partnerHrs;
-    if (hasManager) hrs[managerRank] = managerHrs;
-    distribute(seniorPresent, seniorPool).forEach(([n, v]) => { hrs[n] = v; });
-    distribute(assocPresent, assocPool).forEach(([n, v]) => { hrs[n] = v; });
-    // Any rows that don't belong to P/M/Senior/Assoc groups (e.g. Director,
-    // Exec Director, Intern) — leave at 0 unless they're the only row, in
-    // which case just give them all the allowance.
-    const grouped = new Set([partnerRank, managerRank, ...seniorPresent, ...assocPresent]);
-    const orphans = presentRanks.filter(n => !grouped.has(n));
-    if (orphans.length === presentRanks.length) {
-      // All rows are orphans — even split of labAllowance.
+    rows.forEach(r => {
+      hrs[r.rank] = lockedSet.has(r.rank) ? (r.b || 0) : 0;
+    });
+
+    if (anyManagerialLocked) {
+      // Managerial rule skipped. Fillable managerial ranks share whatever
+      // managerial pool the user implied; remainingLab flows into SA pool
+      // (and any fillable managerial ranks get a proportional share by mix).
+      // Simplest & most useful: give remainingLab to fillable SA ranks per
+      // profile shares, and any fillable managerial ranks at zero UNLESS
+      // there are no SA ranks present, in which case fillable managerial
+      // absorb it all by mix.
+      if (effSA > 0 && (seniorFill.length + assocFill.length) > 0) {
+        const saHrs = remainingLab / effSA;
+        distribute(seniorFill, saHrs * profile.seniorShare).forEach(([n, v]) => { hrs[n] = v; });
+        distribute(assocFill,  saHrs * profile.assocShare ).forEach(([n, v]) => { hrs[n] = v; });
+      } else {
+        // No fillable SA; distribute remainingLab across fillable managerial.
+        const mgrFill = [...partnerFill, ...dsmFill];
+        const bMgr = blendedCost(mgrFill);
+        const mgrHrs = bMgr > 0 ? remainingLab / bMgr : 0;
+        distribute(mgrFill, mgrHrs).forEach(([n, v]) => { hrs[n] = v; });
+      }
+    } else {
+      // No managerial locked → apply the 20% rule.
+      // Partner: target 2 hrs if budget permits (only if Partner is fillable).
+      let partnerHrs = 0;
+      if (partnerFill.length > 0 && bPartner > 0) {
+        if (remainingLab >= PARTNER_TARGET_HRS * bPartner + 0.2 * remainingLab) {
+          partnerHrs = PARTNER_TARGET_HRS;
+        } else if (remainingLab >= bPartner) {
+          partnerHrs = 1;
+        }
+      }
+      distribute(partnerFill, partnerHrs).forEach(([n, v]) => { hrs[n] = v; });
+      const partnerCost = partnerHrs * bPartner;
+
+      // Size T so that: partnerCost + bDSM*(0.2T − partnerHrs) + T*0.8*effSA = remainingLab
+      let T = 0;
+      if (dsmFill.length > 0 && bDSM > 0) {
+        const denom = MANAGERIAL_SHARE * bDSM + (1 - MANAGERIAL_SHARE) * effSA;
+        if (denom > 0) T = (remainingLab - partnerCost + bDSM * partnerHrs) / denom;
+      } else if (effSA > 0) {
+        T = (remainingLab - partnerCost) / ((1 - MANAGERIAL_SHARE) * effSA);
+      } else {
+        T = partnerHrs > 0 ? partnerHrs / MANAGERIAL_SHARE : 0;
+      }
+      if (!isFinite(T) || T <= 0) {
+        const bAll = blendedCost([...partnerFill, ...dsmFill, ...seniorFill, ...assocFill]);
+        T = bAll > 0 ? remainingLab / bAll : 0;
+      }
+      const dsmHrs = dsmFill.length > 0 ? Math.max(0, MANAGERIAL_SHARE * T - partnerHrs) : 0;
+      const saHrs = (1 - MANAGERIAL_SHARE) * T;
+      distribute(dsmFill, dsmHrs).forEach(([n, v]) => { hrs[n] = v; });
+      distribute(seniorFill, saHrs * profile.seniorShare).forEach(([n, v]) => { hrs[n] = v; });
+      distribute(assocFill,  saHrs * profile.assocShare ).forEach(([n, v]) => { hrs[n] = v; });
+    }
+
+    // Orphan fillable ranks (e.g. Intern) — if they're ALL that's fillable,
+    // distribute remainingLab evenly.
+    const grouped = new Set([...partnerFill, ...dsmFill, ...seniorFill, ...assocFill]);
+    const orphans = fillable.filter(n => !grouped.has(n));
+    if (orphans.length === fillable.length && orphans.length > 0) {
       const cOrphan = blendedCost(orphans);
-      const oT = cOrphan > 0 ? labAllowance / cOrphan : 0;
+      const oT = cOrphan > 0 ? remainingLab / cOrphan : 0;
       distribute(orphans, oT).forEach(([n, v]) => { hrs[n] = v; });
     }
 
-    // Final rescale to pin total labour cost to labAllowance
-    // (partner stays pinned; everything else scales).
-    const currentLab = presentRanks.reduce((s, n) => s + hrs[n] * (rates[n]?.cost || 0), 0);
-    if (currentLab > 0) {
-      const scale = labAllowance / currentLab;
-      // If scaling would lower partner below min, keep partner pinned.
-      if (partnerHrs >= 1) {
-        const pinnedCost = partnerHrs * costP;
-        const flexLab = currentLab - pinnedCost;
-        const flexTarget = Math.max(0, labAllowance - pinnedCost);
-        if (flexLab > 0) {
-          const flexScale = flexTarget / flexLab;
-          presentRanks.forEach(n => {
-            if (n === partnerRank) return;
-            hrs[n] = hrs[n] * flexScale;
-          });
-        }
-      } else {
-        presentRanks.forEach(n => { hrs[n] = hrs[n] * scale; });
+    // Final rescale — pin locked rows, scale fillable rows so total labour
+    // cost = labAllowance.
+    const currentLab = rows.reduce(
+      (s, r) => s + (hrs[r.rank] || 0) * (rates[r.rank]?.cost || 0), 0);
+    if (currentLab > 0 && fillable.length > 0) {
+      const flexLab = currentLab - lockedLabCost;
+      const flexTarget = Math.max(0, labAllowance - lockedLabCost);
+      if (flexLab > 0) {
+        const flexScale = flexTarget / flexLab;
+        fillable.forEach(n => { hrs[n] = (hrs[n] || 0) * flexScale; });
       }
     }
 
-    // Round and write back
-    const newRows = rows.map(r => ({ ...r, b: Math.max(0, Math.round(hrs[r.rank] || 0)), e: 0, a: 0 }));
+    const newRows = rows.map(r => ({
+      ...r,
+      b: Math.max(0, Math.round(hrs[r.rank] || 0)),
+      e: 0, a: 0,
+    }));
     setRows(newRows);
   };
 
