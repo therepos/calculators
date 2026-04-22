@@ -12,50 +12,43 @@ import { T, mono, fmtN } from '../shared';
    ═══════════════════════════════════════════════════════════════ */
 
 // ─── Default rate cards (by fiscal year) ───
-// FY2025-26: full grade list extracted from Mercury rate card.
-// Legacy rank names (Partner/Principal, Senior Manager, Manager, Senior
-// Associate 1/2/3, Associate / Staff, Director, Intern (CS)) map to
-// grade-1 of the relevant track so existing saved rows keep working.
+// Internal keys are STABLE (saved history depends on them, don't rename).
+// `name` is the display label; `abbr` the short code; `_divider: true`
+// entries render as a separator in dropdowns.
 const RATE_CARDS = {
   'FY2025-26': {
-    // Partner track (01–03)
-    'Partner 3':               { nsr: 634,  cost: 1489, abbr: 'P3',  mix: 0  },
-    'Partner 2':               { nsr: 629,  cost: 1192, abbr: 'P2',  mix: 0  },
-    'Partner/Principal':       { nsr: 621,  cost: 993,  abbr: 'P',   mix: 2  }, // = Partner 1
-    // Exec / Director track (05, 19–21)
-    'Exec Director 1':         { nsr: 454,  cost: 381,  abbr: 'ED',  mix: 0  },
-    'Director':                { nsr: 785,  cost: 190,  abbr: 'D',   mix: 3  },
-    'Asso Director':           { nsr: 437,  cost: 122,  abbr: 'AD',  mix: 0  },
-    'Asst Director':           { nsr: 294,  cost: 86,   abbr: 'AsD', mix: 0  },
-    // Senior Manager track (06–07)
-    'Senior Manager 2':        { nsr: 384,  cost: 320,  abbr: 'SM2', mix: 0  },
-    'Senior Manager':          { nsr: 342,  cost: 213,  abbr: 'SM',  mix: 4  }, // = Senior Manager 1
-    // Manager (10)
-    'Manager':                 { nsr: 223,  cost: 128,  abbr: 'M',   mix: 12 }, // = Manager 1
-    // Senior track (11–13, 22–23)
-    'Senior Associate 3':      { nsr: 176,  cost: 92,   abbr: 'S3',  mix: 0  },
-    'Senior Associate 2':      { nsr: 159,  cost: 82,   abbr: 'S2',  mix: 0  },
-    'Senior Associate 1':      { nsr: 138,  cost: 79,   abbr: 'S1',  mix: 21 },
-    'Supervising Associate':   { nsr: 168,  cost: 62,   abbr: 'SA',  mix: 0  },
-    'Senior Associate':        { nsr: 138,  cost: 50,   abbr: 'SrA', mix: 0  },
-    // Staff / Associate (15–16, 24)
-    'Staff 2':                 { nsr: 119,  cost: 64,   abbr: 'St2', mix: 0  },
-    'Associate / Staff':       { nsr: 93,   cost: 64,   abbr: 'AA',  mix: 58 }, // = Staff 1
-    'Associate':               { nsr: 108,  cost: 37,   abbr: 'As',  mix: 0  },
-    // Intern (17–18)
-    'Intern (CS)':             { nsr: 45,   cost: 9,    abbr: 'IN',  mix: 0  },
-    'Intern (CBS)':            { nsr: 3,    cost: 6,    abbr: 'ICB', mix: 0  },
+    'Partner 3':               { name: 'Partner 3',              nsr: 634,  cost: 1489, abbr: 'P3',  mix: 0  },
+    'Partner 2':               { name: 'Partner 2',              nsr: 629,  cost: 1192, abbr: 'P2',  mix: 0  },
+    'Partner/Principal':       { name: 'Partner 1',              nsr: 621,  cost: 993,  abbr: 'P',   mix: 2  },
+    'Exec Director 1':         { name: 'Exec Director',          nsr: 454,  cost: 381,  abbr: 'ED',  mix: 0  },
+    'Director':                { name: 'Director',               nsr: 785,  cost: 190,  abbr: 'D',   mix: 3  },
+    'Asso Director':           { name: 'Asso Director',          nsr: 437,  cost: 122,  abbr: 'AD',  mix: 0  },
+    'Asst Director':           { name: 'Asst Director',          nsr: 294,  cost: 86,   abbr: 'ASD', mix: 0  },
+    'Senior Manager 2':        { name: 'Senior Manager 2',       nsr: 384,  cost: 320,  abbr: 'SM2', mix: 0  },
+    'Senior Manager':          { name: 'Senior Manager 1',       nsr: 342,  cost: 213,  abbr: 'SM',  mix: 4  },
+    'Manager':                 { name: 'Manager',                nsr: 223,  cost: 128,  abbr: 'M',   mix: 12 },
+    'Senior Associate 3':      { name: 'Senior Associate 3',     nsr: 176,  cost: 92,   abbr: 'S3',  mix: 0  },
+    'Senior Associate 2':      { name: 'Senior Associate 2',     nsr: 159,  cost: 82,   abbr: 'S2',  mix: 0  },
+    'Senior Associate 1':      { name: 'Senior Associate 1',     nsr: 138,  cost: 79,   abbr: 'S1',  mix: 21 },
+    'Staff 2':                 { name: 'Staff 2',                nsr: 119,  cost: 64,   abbr: 'A2',  mix: 0  },
+    'Associate / Staff':       { name: 'Staff 1',                nsr: 93,   cost: 64,   abbr: 'A1',  mix: 58 },
+    '__divider__':             { _divider: true },
+    'Supervising Associate':   { name: 'Supervising Associate',  nsr: 168,  cost: 62,   abbr: 'SA',  mix: 0  },
+    'Senior Associate':        { name: 'Senior Associate',       nsr: 138,  cost: 50,   abbr: 'SRA', mix: 0  },
+    'Associate':               { name: 'Associate',              nsr: 108,  cost: 37,   abbr: 'AS',  mix: 0  },
+    'Intern (CS)':             { name: 'Intern (CS)',            nsr: 45,   cost: 9,    abbr: 'IN',  mix: 0  },
+    'Intern (CBS)':            { name: 'Intern (CBS)',           nsr: 3,    cost: 6,    abbr: 'ICB', mix: 0  },
   },
   'FY2026-27': {
-    'Partner/Principal':       { nsr: 640, cost: 1038,   abbr: 'P',   mix: 2  },
-    'Director':                { nsr: 468, cost: 398.1,  abbr: 'D',   mix: 3  },
-    'Senior Manager':          { nsr: 396, cost: 334.4,  abbr: 'SM',  mix: 4  },
-    'Manager':                 { nsr: 230, cost: 133.8,  abbr: 'M',   mix: 12 },
-    'Senior Associate 3':      { nsr: 181, cost: 96.14,  abbr: 'S3',  mix: 0  },
-    'Senior Associate 2':      { nsr: 164, cost: 85.69,  abbr: 'S2',  mix: 0  },
-    'Senior Associate 1':      { nsr: 142, cost: 82.56,  abbr: 'S1',  mix: 21 },
-    'Associate / Staff':       { nsr: 96,  cost: 66.88,  abbr: 'AA',  mix: 58 },
-    'Intern (CS)':             { nsr: 45,  cost: 9,      abbr: 'IN',  mix: 0  },
+    'Partner/Principal':       { name: 'Partner 1',           nsr: 640, cost: 1038,   abbr: 'P',   mix: 2  },
+    'Director':                { name: 'Director',            nsr: 468, cost: 398.1,  abbr: 'D',   mix: 3  },
+    'Senior Manager':          { name: 'Senior Manager 1',    nsr: 396, cost: 334.4,  abbr: 'SM',  mix: 4  },
+    'Manager':                 { name: 'Manager',             nsr: 230, cost: 133.8,  abbr: 'M',   mix: 12 },
+    'Senior Associate 3':      { name: 'Senior Associate 3',  nsr: 181, cost: 96.14,  abbr: 'S3',  mix: 0  },
+    'Senior Associate 2':      { name: 'Senior Associate 2',  nsr: 164, cost: 85.69,  abbr: 'S2',  mix: 0  },
+    'Senior Associate 1':      { name: 'Senior Associate 1',  nsr: 142, cost: 82.56,  abbr: 'S1',  mix: 21 },
+    'Associate / Staff':       { name: 'Staff 1',             nsr: 96,  cost: 66.88,  abbr: 'A1',  mix: 58 },
+    'Intern (CS)':             { name: 'Intern (CS)',         nsr: 45,  cost: 9,      abbr: 'IN',  mix: 0  },
   },
 };
 const RATE_YEARS = Object.keys(RATE_CARDS);
@@ -110,7 +103,8 @@ export default function EngEconomics() {
   const [view, setView] = useState('calc'); // 'calc' | 'pm'
   const [rateYear, setRateYear] = useState(DEFAULT_YEAR);
   const [rates, setRates] = useState(DEFAULT_RATES);
-  const rankNames = Object.keys(rates);
+  const rankOrder = Object.keys(rates);
+  const rankNames = rankOrder.filter(k => !rates[k]?._divider);
 
   // Resource rows: [{ rank: 'Partner/Principal', b, e, a }]
   const [rows, setRows] = useState([
@@ -643,7 +637,8 @@ export default function EngEconomics() {
         const mix = parts.length >= 4 ? (+parts[3] || 0) : 0;
         if (!rk || isNaN(nsr) || isNaN(cost)) continue;
         const abbr = DEFAULT_RATES[rk]?.abbr || rk.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
-        newRates[rk] = { nsr, cost, mix, abbr };
+        const name = DEFAULT_RATES[rk]?.name || rk;
+        newRates[rk] = { name, nsr, cost, mix, abbr };
       }
       const keys = Object.keys(newRates);
       if (!keys.length) { alert('No valid rates found.'); return; }
@@ -760,7 +755,7 @@ export default function EngEconomics() {
                   value={r.rank} disabled={lk}
                   onChange={v => updateRow(i, { rank: v })}
                   rates={rates}
-                  rankNames={rankNames}
+                  rankNames={rankOrder}
                 />
                 <NumCell
                   value={r.b} locked={lk}
@@ -1146,7 +1141,7 @@ export default function EngEconomics() {
             <tbody>
               {rankNames.map(n => (
                 <tr key={n}>
-                  <td style={{ padding: '5px 8px', color: T.text2 }}>{rates[n].abbr} — {n}</td>
+                  <td style={{ padding: '5px 8px', color: T.text2 }}>{rates[n].abbr} — {rates[n].name || n}</td>
                   <td style={{ padding: '5px 8px', textAlign: 'right' }}>${rates[n].nsr}</td>
                   <td style={{ padding: '5px 8px', textAlign: 'right' }}>${rates[n].cost}</td>
                   <td style={{ padding: '5px 8px', textAlign: 'right' }}>{rates[n].mix || 0}%</td>
@@ -1302,13 +1297,14 @@ function RankSelect({ value, disabled, onChange, rates, rankNames }) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
   const abbr = rates[value]?.abbr || value;
+  const displayName = rates[value]?.name || value;
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
-        title={rates[value] ? `${abbr} — ${value}` : value}
+        title={rates[value] ? `${abbr} — ${displayName}` : value}
         style={{
           ...rowSelect(),
           opacity: disabled ? 0.6 : 1,
@@ -1333,6 +1329,10 @@ function RankSelect({ value, disabled, onChange, rates, rankNames }) {
           fontSize: 12,
         }}>
           {rankNames.map(n => {
+            const rk = rates[n];
+            if (rk?._divider) {
+              return <div key={n} style={{ height: 1, background: T.border, margin: '4px 0' }} />;
+            }
             const selected = n === value;
             return (
               <div
@@ -1341,7 +1341,7 @@ function RankSelect({ value, disabled, onChange, rates, rankNames }) {
                 style={{
                   padding: '6px 10px',
                   cursor: 'pointer',
-                  background: selected ? T.bgSoft || '#F1F5F9' : T.white,
+                  background: selected ? '#F1F5F9' : T.white,
                   color: T.text,
                   display: 'flex', gap: 8, alignItems: 'center',
                   whiteSpace: 'nowrap',
@@ -1352,8 +1352,8 @@ function RankSelect({ value, disabled, onChange, rates, rankNames }) {
                 <span style={{
                   display: 'inline-block', minWidth: 32,
                   color: T.text3, fontFamily: mono, fontSize: 11,
-                }}>{rates[n]?.abbr || ''}</span>
-                <span>{n}</span>
+                }}>{rk?.abbr || ''}</span>
+                <span>{rk?.name || n}</span>
               </div>
             );
           })}
