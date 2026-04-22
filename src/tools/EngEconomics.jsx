@@ -465,22 +465,34 @@ export default function EngEconomics() {
       }
     }
 
-    // 5) Post-rule rescale: rules shifted hours between ranks with different
-    //    cost rates, so total labour cost has drifted. Rescale proportionally
-    //    so total labour cost lands back on labAllowance. This is what keeps
-    //    the margin target (and prevents the NSR-vs-Fee overrun).
-    const currentLabour = rows.reduce((s, r) => {
-      const rk = rates[r.rank]; if (!rk) return s;
-      return s + h(r.rank) * rk.cost;
-    }, 0);
-    if (currentLabour > 0 && labAllowance > 0) {
-      const scale = labAllowance / currentLabour;
-      Object.keys(hrs).forEach(n => { hrs[n] = h(n) * scale; });
-    }
-
-    // 6) Rule 1: Partner >= 2 hours (hard floor, applied last).
+    // 5) Rule 1: Partner >= 2 hours (applied BEFORE final rescale so the
+    //    rescale absorbs the floor-induced cost into the other ranks).
     if (has('Partner/Principal') && h('Partner/Principal') < 2) {
       set('Partner/Principal', 2);
+    }
+
+    // 6) Post-rule rescale: rules shifted hours between ranks with different
+    //    cost rates (and the Partner floor may have bumped P up), so total
+    //    labour cost has drifted. Rescale non-Partner ranks proportionally so
+    //    total labour cost lands on labAllowance while preserving P>=2.
+    let pinnedLab = 0;
+    let flexLab = 0;
+    rows.forEach(r => {
+      const rk = rates[r.rank]; if (!rk) return;
+      const cost = h(r.rank) * rk.cost;
+      if (r.rank === 'Partner/Principal' && h(r.rank) <= 2) {
+        pinnedLab += cost;
+      } else {
+        flexLab += cost;
+      }
+    });
+    const flexTarget = Math.max(0, labAllowance - pinnedLab);
+    if (flexLab > 0 && flexTarget >= 0) {
+      const scale = flexTarget / flexLab;
+      rows.forEach(r => {
+        if (r.rank === 'Partner/Principal' && h(r.rank) <= 2) return;
+        if (has(r.rank)) set(r.rank, h(r.rank) * scale);
+      });
     }
 
     // Final: round to integers
