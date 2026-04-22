@@ -12,28 +12,50 @@ import { T, mono, fmtN } from '../shared';
    ═══════════════════════════════════════════════════════════════ */
 
 // ─── Default rate cards (by fiscal year) ───
+// FY2025-26: full grade list extracted from Mercury rate card.
+// Legacy rank names (Partner/Principal, Senior Manager, Manager, Senior
+// Associate 1/2/3, Associate / Staff, Director, Intern (CS)) map to
+// grade-1 of the relevant track so existing saved rows keep working.
 const RATE_CARDS = {
   'FY2025-26': {
-    'Partner/Principal':    { nsr: 621, cost: 993, abbr: 'P',  mix: 2  },
-    'Director':             { nsr: 454, cost: 381, abbr: 'D',  mix: 3  },
-    'Senior Manager':       { nsr: 384, cost: 320, abbr: 'SM', mix: 4  },
-    'Manager':              { nsr: 223, cost: 128, abbr: 'M',  mix: 12 },
-    'Senior Associate 3':   { nsr: 176, cost: 92,  abbr: 'S3', mix: 0  },
-    'Senior Associate 2':   { nsr: 159, cost: 82,  abbr: 'S2', mix: 0  },
-    'Senior Associate 1':   { nsr: 138, cost: 79,  abbr: 'S1', mix: 21 },
-    'Associate / Staff':    { nsr: 93,  cost: 64,  abbr: 'AA', mix: 58 },
-    'Intern (CS)':          { nsr: 45,  cost: 9,   abbr: 'IN', mix: 0  },
+    // Partner track (01–03)
+    'Partner 3':               { nsr: 634,  cost: 1489, abbr: 'P3',  mix: 0  },
+    'Partner 2':               { nsr: 629,  cost: 1192, abbr: 'P2',  mix: 0  },
+    'Partner/Principal':       { nsr: 621,  cost: 993,  abbr: 'P',   mix: 2  }, // = Partner 1
+    // Exec / Director track (05, 19–21)
+    'Exec Director 1':         { nsr: 454,  cost: 381,  abbr: 'ED',  mix: 0  },
+    'Director':                { nsr: 785,  cost: 190,  abbr: 'D',   mix: 3  },
+    'Asso Director':           { nsr: 437,  cost: 122,  abbr: 'AD',  mix: 0  },
+    'Asst Director':           { nsr: 294,  cost: 86,   abbr: 'AsD', mix: 0  },
+    // Senior Manager track (06–07)
+    'Senior Manager 2':        { nsr: 384,  cost: 320,  abbr: 'SM2', mix: 0  },
+    'Senior Manager':          { nsr: 342,  cost: 213,  abbr: 'SM',  mix: 4  }, // = Senior Manager 1
+    // Manager (10)
+    'Manager':                 { nsr: 223,  cost: 128,  abbr: 'M',   mix: 12 }, // = Manager 1
+    // Senior track (11–13, 22–23)
+    'Senior Associate 3':      { nsr: 176,  cost: 92,   abbr: 'S3',  mix: 0  },
+    'Senior Associate 2':      { nsr: 159,  cost: 82,   abbr: 'S2',  mix: 0  },
+    'Senior Associate 1':      { nsr: 138,  cost: 79,   abbr: 'S1',  mix: 21 },
+    'Supervising Associate':   { nsr: 168,  cost: 62,   abbr: 'SA',  mix: 0  },
+    'Senior Associate':        { nsr: 138,  cost: 50,   abbr: 'SrA', mix: 0  },
+    // Staff / Associate (15–16, 24)
+    'Staff 2':                 { nsr: 119,  cost: 64,   abbr: 'St2', mix: 0  },
+    'Associate / Staff':       { nsr: 93,   cost: 64,   abbr: 'AA',  mix: 58 }, // = Staff 1
+    'Associate':               { nsr: 108,  cost: 37,   abbr: 'As',  mix: 0  },
+    // Intern (17–18)
+    'Intern (CS)':             { nsr: 45,   cost: 9,    abbr: 'IN',  mix: 0  },
+    'Intern (CBS)':            { nsr: 3,    cost: 6,    abbr: 'ICB', mix: 0  },
   },
   'FY2026-27': {
-    'Partner/Principal':    { nsr: 640, cost: 1038,   abbr: 'P',  mix: 2  },
-    'Director':             { nsr: 468, cost: 398.1,  abbr: 'D',  mix: 3  },
-    'Senior Manager':       { nsr: 396, cost: 334.4,  abbr: 'SM', mix: 4  },
-    'Manager':              { nsr: 230, cost: 133.8,  abbr: 'M',  mix: 12 },
-    'Senior Associate 3':   { nsr: 181, cost: 96.14,  abbr: 'S3', mix: 0  },
-    'Senior Associate 2':   { nsr: 164, cost: 85.69,  abbr: 'S2', mix: 0  },
-    'Senior Associate 1':   { nsr: 142, cost: 82.56,  abbr: 'S1', mix: 21 },
-    'Associate / Staff':    { nsr: 96,  cost: 66.88,  abbr: 'AA', mix: 58 },
-    'Intern (CS)':          { nsr: 45,  cost: 9,      abbr: 'IN', mix: 0  },
+    'Partner/Principal':       { nsr: 640, cost: 1038,   abbr: 'P',   mix: 2  },
+    'Director':                { nsr: 468, cost: 398.1,  abbr: 'D',   mix: 3  },
+    'Senior Manager':          { nsr: 396, cost: 334.4,  abbr: 'SM',  mix: 4  },
+    'Manager':                 { nsr: 230, cost: 133.8,  abbr: 'M',   mix: 12 },
+    'Senior Associate 3':      { nsr: 181, cost: 96.14,  abbr: 'S3',  mix: 0  },
+    'Senior Associate 2':      { nsr: 164, cost: 85.69,  abbr: 'S2',  mix: 0  },
+    'Senior Associate 1':      { nsr: 142, cost: 82.56,  abbr: 'S1',  mix: 21 },
+    'Associate / Staff':       { nsr: 96,  cost: 66.88,  abbr: 'AA',  mix: 58 },
+    'Intern (CS)':             { nsr: 45,  cost: 9,      abbr: 'IN',  mix: 0  },
   },
 };
 const RATE_YEARS = Object.keys(RATE_CARDS);
@@ -41,7 +63,12 @@ const DEFAULT_YEAR = 'FY2025-26';
 const DEFAULT_RATES = RATE_CARDS[DEFAULT_YEAR];
 
 // Staff excluded from booking estimate (partners/managers don't appear as weekly bookings)
-const STAFF_EXCLUDE = ['Partner/Principal', 'Director', 'Senior Manager', 'Manager'];
+const STAFF_EXCLUDE = [
+  'Partner 3', 'Partner 2', 'Partner/Principal',
+  'Exec Director 1', 'Director', 'Asso Director', 'Asst Director',
+  'Senior Manager 2', 'Senior Manager',
+  'Manager',
+];
 
 // Rank colours for booking estimate blocks
 const RANK_COLORS = [
