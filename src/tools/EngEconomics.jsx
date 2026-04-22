@@ -208,9 +208,13 @@ export default function EngEconomics() {
     const lab = commitSum.c;
     const tech = lab * tp;
     const cost = lab + tech + bxpN;
+    // Total Engagement Revenue = Fee + Billable Expenses.
+    // At budget time ANSR == Fee (by EAF construction), so TER = Fee + bxp.
+    // Using TER as the margin denominator matches Reporting Hub conventions.
+    const ter = feeN + bxpN;
     const mgn = feeN - cost;
-    const mp = feeN > 0 ? mgn / feeN : 0;
-    const bca = feeN > 0 ? feeN * (1 - tgtP) : 0;
+    const mp = ter > 0 ? mgn / ter : 0;
+    const bca = ter > 0 ? ter * (1 - tgtP) : 0;
 
     // EAF for unbilled calc
     let nuiEaf = 0;
@@ -231,20 +235,20 @@ export default function EngEconomics() {
     // Budget-pane values — prefer snap when locked
     const bC = lk ? snap.bL + snap.bT + bxpN : cost;
     const bM = lk ? feeN - bC : mgn;
-    const bMP = lk && feeN > 0 ? bM / feeN : mp;
+    const bMP = lk && ter > 0 ? bM / ter : mp;
 
     // Actual margin
     const actLabCost = actSum.c, actTech = actLabCost * tp;
     const actCost = actLabCost + actTech + bxpN;
     const actMgn = feeN - actCost;
-    const actMP = feeN > 0 ? actMgn / feeN : 0;
+    const actMP = ter > 0 ? actMgn / ter : 0;
     const marginDelta = (lk && feeN > 0 && aH > 0) ? actMP - snap.bMP : null;
 
     return {
       feeN, bxpN, cxpN, bfN, bbxN, tgtP, tp,
       bgtSum, commitSum, actSum,
       bH, eH, tH, aH,
-      nsr, lab, tech, cost, mgn, mp, bca,
+      nsr, lab, tech, cost, mgn, mp, bca, ter,
       eaf, nuiEaf, aRec, nui, dispANSR,
       active, bC, bM, bMP,
       actMgn, actMP, marginDelta,
@@ -263,13 +267,15 @@ export default function EngEconomics() {
     if (lk || calc.bH === 0) return;
     const b = calc.bgtSum;
     const tp = calc.tp;
+    const bCost = b.c + b.c * tp + calc.bxpN;
+    const bTer = calc.feeN + calc.bxpN;
     setSnap({
       bN: b.n,
       bL: b.c,
       bT: b.c * tp,
-      bC: b.c + b.c * tp + calc.bxpN,
-      bM: calc.feeN - (b.c + b.c * tp + calc.bxpN),
-      bMP: calc.feeN > 0 ? (calc.feeN - (b.c + b.c * tp + calc.bxpN)) / calc.feeN : 0,
+      bC: bCost,
+      bM: calc.feeN - bCost,
+      bMP: bTer > 0 ? (calc.feeN - bCost) / bTer : 0,
     });
     // Pre-fill actuals to budget (user then updates)
     setRows(p => p.map(r => ({ ...r, a: r.b, e: 0 })));
@@ -310,7 +316,9 @@ export default function EngEconomics() {
     if (lk) return;
     if (calc.feeN <= 0) { alert('Enter Agreed Fees first.'); return; }
     if (rows.length === 0) { alert('Add at least one resource row first.'); return; }
-    const bca = calc.feeN * (1 - (+tgt || 0) / 100);
+    // Cost allowance is based on TER (Fee + billable expenses), matching
+    // Reporting Hub's margin-% denominator.
+    const bca = calc.ter * (1 - (+tgt || 0) / 100);
 
     // 1) Initial allocation by mix %, scaled so total cost = bca
     const weights = rows.map(r => rates[r.rank]?.mix || 0);
@@ -811,7 +819,7 @@ export default function EngEconomics() {
           />
           <StatRow label={
             <>Target margin <PctInputBadge value={tgt} onChange={setTgt} /></>
-          } value={calc.feeN > 0 ? fa(calc.feeN * calc.tgtP) : '—'} />
+          } value={calc.feeN > 0 ? fa(calc.ter * calc.tgtP) : '—'} />
           <StatRow label="Cost allowance"
             value={calc.active && calc.feeN > 0 ? fa(calc.bca) : '—'} />
           <StatRow label={<strong>Budgeted cost</strong>}
@@ -954,13 +962,14 @@ export default function EngEconomics() {
           <p style={{ marginTop: 10 }}><strong>EAF</strong> (Engagement Adjustment Factor) = (ANSR ÷ NSR) − 1. Premium or discount vs standard rates.</p>
           <p style={{ marginTop: 10 }}><strong>TER</strong> (Total Engagement Revenue) = ANSR + Billable Expenses.</p>
           <p style={{ marginTop: 10 }}><strong>Margin</strong> = ANSR − (Labour Cost + Tech Fee + Expenses).</p>
+          <p style={{ marginTop: 10 }}><strong>Margin %</strong> = Margin ÷ TER. Uses TER as denominator to match Reporting Hub.</p>
           <p style={{ marginTop: 10 }}><strong>NUI</strong> (Net Unbilled Inventory) = (Recognized ANSR + Charged Expenses) − (Billed Fees + Billed Expenses).</p>
           <ul style={{ marginTop: 6, paddingLeft: 22, color: T.text3 }}>
             <li>NUI &gt; 0 → work done but not yet billed</li>
             <li>NUI = 0 → billed exactly what has been recognized</li>
             <li>NUI &lt; 0 → billed ahead of work performed</li>
           </ul>
-          <p style={{ marginTop: 10 }}><strong>Cost allowance</strong> = Fee × (1 − Target Margin%).</p>
+          <p style={{ marginTop: 10 }}><strong>Cost allowance</strong> = TER × (1 − Target Margin%).</p>
         </div>
 
         <div style={{
