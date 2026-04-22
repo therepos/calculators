@@ -285,31 +285,41 @@ export default function EngEconomics() {
     const actMP = ter > 0 ? actMgn / ter : 0;
     const marginDelta = (lk && feeN > 0 && aH > 0) ? actMP - snap.bMP : null;
 
-    // ─── Mercury pre-flight (budget quality checks) ───
-    // Informational only. The real overrun check is Cost ≤ TER × (1 − target%).
-    // 1) Estimated Budget NSR: bottom-up from planned hours. This is the
-    //    Budget NSR to enter in Mercury.
-    const bgtNsrEst = bgtSum.n;
-    // 2) Implied Budget EAF = Fee / Budget NSR − 1. Shown as info; can be
-    //    negative without implying any problem (standard rate card often
-    //    prices above market, so NSR > Fee is routine).
+    // ─── Mercury pre-flight (projection-based) ───
+    // Uses projected = actual + ETC (falls back to budget pre-lock since
+    // actual and ETC are both 0). Post-lock, as actuals/ETC update, the
+    // panel reflects the current projection rather than the original budget.
+    const projH = rows.reduce((s, r) => {
+      const bgt = r.b || 0, act = r.a || 0, etc = r.e || 0;
+      // Pre-lock: no actuals yet, project = budget
+      // Post-lock: project = actual + ETC (what we expect to finish at)
+      return s + (lk ? (act + etc) : bgt);
+    }, 0);
+    const projSum = rows.reduce((s, r) => {
+      const rk = rates[r.rank]; if (!rk) return s;
+      const bgt = r.b || 0, act = r.a || 0, etc = r.e || 0;
+      const h = lk ? (act + etc) : bgt;
+      return { n: s.n + h * rk.nsr, c: s.c + h * rk.cost };
+    }, { n: 0, c: 0 });
+
+    // Estimated Budget NSR (from projected hours — still the number to
+    // enter/update in Mercury as the projection).
+    const bgtNsrEst = projSum.n;
     const bgtEafEst = (bgtNsrEst > 0 && feeN > 0) ? (feeN / bgtNsrEst) - 1 : 0;
-    // 3) EAF health is informational: used for a tiny dot indicator only.
-    //    No longer drives any blocking behavior or panel tinting.
     let eafHealth = 'none';
     if (feeN > 0 && bgtNsrEst > 0) {
       if (bgtEafEst < -0.60 || bgtEafEst > 0.60) eafHealth = 'amber';
       else eafHealth = 'green';
     }
 
-    // Capacity planning — translate margin logic into "hours I can book"
-    // at the current rank mix (scaled proportionally).
+    // Capacity planning — at the projected mix, how many hours fit the
+    // target-margin cost allowance? Headroom = Max − Planned (projected).
     let maxHrsAtTarget = 0, hrsHeadroom = 0;
-    if (bH > 0 && bgtSum.c > 0 && feeN > 0) {
-      const costPerHr = bgtSum.c / bH;
+    if (projH > 0 && projSum.c > 0 && feeN > 0) {
+      const costPerHr = projSum.c / projH;
       const labAllowance = Math.max(0, (bca - bxpN) / (1 + tp));
       maxHrsAtTarget = costPerHr > 0 ? labAllowance / costPerHr : 0;
-      hrsHeadroom = maxHrsAtTarget - bH;
+      hrsHeadroom = maxHrsAtTarget - projH;
     }
 
     return {
@@ -320,7 +330,8 @@ export default function EngEconomics() {
       eaf, nuiEaf, aRec, nui, dispANSR,
       active, bC, bM, bMP,
       actMgn, actMP, marginDelta,
-      // Mercury pre-flight
+      // Mercury pre-flight (projected)
+      projH, projSum,
       bgtNsrEst, bgtEafEst, eafHealth,
       maxHrsAtTarget, hrsHeadroom,
     };
@@ -949,14 +960,15 @@ export default function EngEconomics() {
             valueColor={calc.bM < 0 ? T.red : undefined}
             emphasis />
 
-          {/* Mercury pre-flight — primary check is cost headroom (margin).
-              Everything else is informational. */}
-          {calc.bH > 0 && calc.feeN > 0 && (() => {
-            const planned = calc.bH;
+          {/* Mercury pre-flight — projected-based. Pre-lock, projected == budget. */}
+          {calc.projH > 0 && calc.feeN > 0 && (() => {
+            const planned = calc.projH;
             const maxHrs = Math.floor(calc.maxHrsAtTarget);
             const headroom = maxHrs - planned;
             const overBudget = headroom < 0;
             const headroomColor = overBudget ? T.red : headroom < 10 ? T.amber : T.green;
+            const hoursLabel = lk ? 'Projected hours' : 'Planned hours';
+            const subtitle = lk ? 'based on projected cost' : 'budget sanity check';
             return (
               <div style={{
                 marginTop: 14, padding: '12px 14px',
@@ -966,14 +978,14 @@ export default function EngEconomics() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <strong style={{ color: T.text, fontSize: 13 }}>Mercury pre-flight</strong>
-                  <span style={{ color: T.text3, fontSize: 12 }}>budget sanity check</span>
+                  <span style={{ color: T.text3, fontSize: 12 }}>{subtitle}</span>
                 </div>
 
                 {/* Primary: hours-based capacity against target margin */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 6, columnGap: 16 }}>
                   <span><strong style={{ color: T.text }}>Max bookable hours</strong> <span style={{ color: T.text3 }}>at {(calc.tgtP * 100).toFixed(0)}% margin, current mix</span></span>
                   <strong style={{ color: T.text, fontFamily: mono, fontSize: 14 }}>{fmtN(maxHrs)} hrs</strong>
-                  <span>Planned hours</span>
+                  <span>{hoursLabel}</span>
                   <span style={{ color: T.text, fontFamily: mono }}>{fmtN(planned)} hrs</span>
                   <span><strong style={{ color: T.text }}>Headroom</strong> <span style={{ color: T.text3 }}>{overBudget ? '(over budget)' : '(hours available)'}</span></span>
                   <strong style={{ color: headroomColor, fontFamily: mono, fontSize: 14 }}>
@@ -981,15 +993,15 @@ export default function EngEconomics() {
                   </strong>
                 </div>
 
-                {/* Secondary: Mercury reference values, informational only */}
+                {/* Secondary: Mercury reference values */}
                 <div style={{
                   marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${T.border}`,
                   display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 3, columnGap: 16,
                   fontSize: 12, color: T.text3,
                 }}>
-                  <span>Estimated Budget NSR <span style={{ fontSize: 11 }}>(enter in Mercury)</span></span>
+                  <span>{lk ? 'Projected NSR' : 'Estimated Budget NSR'} <span style={{ fontSize: 11 }}>(enter in Mercury)</span></span>
                   <span style={{ color: T.text2, fontFamily: mono }}>{fa(calc.bgtNsrEst)}</span>
-                  <span>Implied Budget EAF <span style={{ fontSize: 11 }}>(informational)</span></span>
+                  <span>{lk ? 'Projected EAF' : 'Implied Budget EAF'} <span style={{ fontSize: 11 }}>(informational)</span></span>
                   <span style={{ color: T.text2, fontFamily: mono }}>{(calc.bgtEafEst * 100).toFixed(2)}%</span>
                 </div>
               </div>
@@ -1132,10 +1144,10 @@ export default function EngEconomics() {
           </ul>
           <p style={{ marginTop: 10 }}><strong>Cost allowance</strong> = TER × (1 − Target Margin%).</p>
           <p style={{ marginTop: 14, color: T.text }}><strong>Mercury pre-flight</strong></p>
-          <p style={{ marginTop: 6 }}><strong>Max bookable hours</strong> = largest hour pool (scaling current mix) that keeps Cost ≤ TER × (1 − Target Margin%). This is the ceiling that matters: the engagement hits target margin when planned hours stay at or below this number.</p>
-          <p style={{ marginTop: 10 }}><strong>Headroom</strong> = Max bookable − Planned. Green if &gt;10 hrs, amber if tight, red if already over budget.</p>
-          <p style={{ marginTop: 10 }}><strong>Estimated Budget NSR</strong> = Σ (Planned Hours × NSR Rate). The Budget NSR to enter in Mercury — it is <em>not</em> derived from Fee or Target Margin.</p>
-          <p style={{ marginTop: 10 }}><strong>Implied Budget EAF</strong> = (Fee ÷ Estimated Budget NSR) − 1. Informational. Negative EAF is normal when the rate card's NSR rates exceed market fee; the firm recognises revenue at Fee regardless. Cost margin is the real check.</p>
+          <p style={{ marginTop: 6 }}><strong>Max bookable hours</strong> = largest hour pool (scaling current mix) that keeps Cost ≤ TER × (1 − Target Margin%). Pre-lock this uses planned (budget) hours; once budget is locked it uses projected hours (actual + ETC), so the panel tracks whether the engagement is still on course to hit target margin.</p>
+          <p style={{ marginTop: 10 }}><strong>Headroom</strong> = Max bookable − Projected. Green if &gt;10 hrs, amber if tight, red if already over budget.</p>
+          <p style={{ marginTop: 10 }}><strong>Estimated/Projected NSR</strong> = Σ (Hours × NSR Rate). Pre-lock shows the Budget NSR to enter in Mercury; post-lock shows projected NSR (actual + ETC).</p>
+          <p style={{ marginTop: 10 }}><strong>Implied/Projected EAF</strong> = (Fee ÷ NSR) − 1. Informational. Negative EAF is normal when the rate card's NSR rates exceed market fee.</p>
         </div>
 
         <div style={{
