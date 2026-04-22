@@ -262,6 +262,23 @@ export default function EngEconomics() {
     //    Phantom revenue that will unwind as a writedown.
     const unbillable = Math.max(0, aRec - feeN);
 
+    // 5) Capacity planning — translate EAF/margin logic into "hours I can book"
+    //    at the current rank mix. Scales the current mix proportionally.
+    let maxHrsAtTarget = 0, maxHrsAtEafZero = 0, hrsHeadroom = 0;
+    if (bH > 0 && bgtSum.c > 0) {
+      const costPerHr = bgtSum.c / bH;           // blended labour cost per hour
+      const nsrPerHr  = bgtSum.n / bH;           // blended NSR per hour
+      if (feeN > 0) {
+        // Cost ceiling: hours at which labour+tech+exp == TER × (1 − target%)
+        // bca = TER × (1 − target%); solve for labour: labour × (1+tp) + bxpN = bca
+        const labAllowance = Math.max(0, (bca - bxpN) / (1 + tp));
+        maxHrsAtTarget = costPerHr > 0 ? labAllowance / costPerHr : 0;
+        // Billable ceiling: hours at which NSR equals Fee (EAF = 0)
+        maxHrsAtEafZero = nsrPerHr > 0 ? feeN / nsrPerHr : 0;
+        hrsHeadroom = maxHrsAtTarget - bH;
+      }
+    }
+
     return {
       feeN, bxpN, cxpN, bfN, bbxN, tgtP, tp,
       bgtSum, commitSum, actSum,
@@ -272,6 +289,7 @@ export default function EngEconomics() {
       actMgn, actMP, marginDelta,
       // Mercury pre-flight
       bgtNsrEst, bgtEafEst, eafHealth, unbillable,
+      maxHrsAtTarget, maxHrsAtEafZero, hrsHeadroom,
     };
   }, [rows, fee, bxp, cxp, bf, bbx, tgt, techP, lk, ed, snap, rates]);
 
@@ -869,43 +887,68 @@ export default function EngEconomics() {
           {calc.bH > 0 && calc.feeN > 0 && (() => {
             const h = calc.eafHealth;
             const dot = h === 'green' ? T.green : h === 'amber' ? T.amber : h === 'red' ? T.red : T.text3;
-            const label = h === 'green' ? 'Healthy' : h === 'amber' ? 'High — review mix' : h === 'red' ? 'Out of range — likely NSR error' : '—';
+            const eafLabel = h === 'green' ? 'Healthy' : h === 'amber' ? 'High — review mix' : h === 'red' ? 'Out of range — likely NSR error' : '—';
+            const planned = calc.bH;
+            const maxHrs = Math.floor(calc.maxHrsAtTarget);
+            const eafZero = Math.floor(calc.maxHrsAtEafZero);
+            const headroom = maxHrs - planned;
+            const overBudget = headroom < 0;
+            const headroomColor = overBudget ? T.red : headroom < 10 ? T.amber : T.green;
             return (
               <div style={{
                 marginTop: 14, padding: '12px 14px',
-                background: h === 'red' ? '#FEF2F2' : h === 'amber' ? '#FFFBEB' : T.panelBg || '#F8FAFC',
+                background: h === 'red' ? '#FEF2F2' : h === 'amber' ? '#FFFBEB' : '#F8FAFC',
                 border: `1px solid ${h === 'red' ? '#FECACA' : h === 'amber' ? '#FDE68A' : T.border}`,
                 borderRadius: T.radius, fontSize: 13, color: T.text2,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block' }} />
                   <strong style={{ color: T.text, fontSize: 13 }}>Mercury pre-flight</strong>
                   <span style={{ color: T.text3, fontSize: 12 }}>checks before locking budget</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 4, columnGap: 16 }}>
-                  <span>Estimated Budget NSR <span style={{ color: T.text3 }}>(enter in Mercury)</span></span>
-                  <strong style={{ color: T.text, fontFamily: mono }}>{fa(calc.bgtNsrEst)}</strong>
+
+                {/* Primary: hours-based capacity */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 6, columnGap: 16 }}>
+                  <span><strong style={{ color: T.text }}>Max bookable hours</strong> <span style={{ color: T.text3 }}>at {(calc.tgtP * 100).toFixed(0)}% margin, current mix</span></span>
+                  <strong style={{ color: T.text, fontFamily: mono, fontSize: 14 }}>{fmtN(maxHrs)} hrs</strong>
+                  <span>Planned hours</span>
+                  <span style={{ color: T.text, fontFamily: mono }}>{fmtN(planned)} hrs</span>
+                  <span><strong style={{ color: T.text }}>Headroom</strong> <span style={{ color: T.text3 }}>{overBudget ? '(over budget)' : '(hours available)'}</span></span>
+                  <strong style={{ color: headroomColor, fontFamily: mono, fontSize: 14 }}>
+                    {overBudget ? '−' : '+'}{fmtN(Math.abs(headroom))} hrs
+                  </strong>
+                </div>
+
+                {/* Secondary: Mercury-specific fields, smaller */}
+                <div style={{
+                  marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${T.border}`,
+                  display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 3, columnGap: 16,
+                  fontSize: 12, color: T.text3,
+                }}>
+                  <span>Estimated Budget NSR <span style={{ fontSize: 11 }}>(enter in Mercury)</span></span>
+                  <span style={{ color: T.text2, fontFamily: mono }}>{fa(calc.bgtNsrEst)}</span>
                   <span>Implied Budget EAF</span>
-                  <strong style={{ color: dot, fontFamily: mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% — {label}</strong>
-                  <span>Mercury Budget ANSR target <span style={{ color: T.text3 }}>(= Fee)</span></span>
-                  <span style={{ color: T.text, fontFamily: mono }}>{fa(calc.feeN)}</span>
+                  <span style={{ color: dot, fontFamily: mono }}>{(calc.bgtEafEst * 100).toFixed(2)}% · {eafLabel}</span>
+                  <span>NSR = Fee ceiling <span style={{ fontSize: 11 }}>(EAF hits 0%)</span></span>
+                  <span style={{ color: T.text2, fontFamily: mono }}>{fmtN(eafZero)} hrs</span>
                   {lk && calc.unbillable > 0 && (
                     <>
-                      <span style={{ color: T.red }}>Unbillable recognition <span style={{ color: T.text3 }}>(NUI writedown risk)</span></span>
-                      <strong style={{ color: T.red, fontFamily: mono }}>{fa(calc.unbillable)}</strong>
+                      <span style={{ color: T.red, fontSize: 12 }}>Unbillable recognition <span style={{ fontSize: 11 }}>(writedown risk)</span></span>
+                      <span style={{ color: T.red, fontFamily: mono }}>{fa(calc.unbillable)}</span>
                     </>
                   )}
                 </div>
+
                 {h === 'red' && !lk && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
-                    Fee ÷ Budget NSR implies a {(calc.bgtEafEst * 100).toFixed(1)}% EAF. Healthy range is 0–40%.
-                    Re-check planned hours by rank or confirm the fee is genuinely premium before locking.
+                  <div style={{ marginTop: 10, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
+                    Implied EAF {(calc.bgtEafEst * 100).toFixed(1)}% is outside 0–40%.
+                    Usually this means the planned mix is wrong, or the fee is mispriced. Re-check before locking.
                   </div>
                 )}
                 {h === 'amber' && !lk && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: T.amberVal, lineHeight: 1.5 }}>
-                    EAF is elevated ({(calc.bgtEafEst * 100).toFixed(1)}%). Premium engagements can sit here;
-                    confirm mix is realistic.
+                  <div style={{ marginTop: 10, fontSize: 12, color: T.amberVal, lineHeight: 1.5 }}>
+                    Implied EAF {(calc.bgtEafEst * 100).toFixed(1)}% is elevated.
+                    Premium engagements can sit here — confirm mix is realistic.
                   </div>
                 )}
               </div>
@@ -1048,7 +1091,9 @@ export default function EngEconomics() {
           </ul>
           <p style={{ marginTop: 10 }}><strong>Cost allowance</strong> = TER × (1 − Target Margin%).</p>
           <p style={{ marginTop: 14, color: T.text }}><strong>Mercury pre-flight</strong></p>
-          <p style={{ marginTop: 6 }}><strong>Estimated Budget NSR</strong> = Σ (Planned Hours × NSR Rate). This is the Budget NSR to enter in Mercury — it is <em>not</em> derived from Fee or Target Margin.</p>
+          <p style={{ marginTop: 6 }}><strong>Max bookable hours</strong> = largest hour pool (scaling current mix) that keeps Cost ≤ TER × (1 − Target Margin%). This is the practical ceiling for how many hours the engagement can absorb at the current rank mix.</p>
+          <p style={{ marginTop: 10 }}><strong>Headroom</strong> = Max bookable − Planned. Green if &gt;10 hrs, amber if tight, red if already over.</p>
+          <p style={{ marginTop: 10 }}><strong>Estimated Budget NSR</strong> = Σ (Planned Hours × NSR Rate). The Budget NSR to enter in Mercury — it is <em>not</em> derived from Fee or Target Margin.</p>
           <p style={{ marginTop: 10 }}><strong>Implied Budget EAF</strong> = (Fee ÷ Estimated Budget NSR) − 1. A common error is back-calculating Budget NSR from Fee × (1 − Margin%), which inflates EAF and causes every actual hour to be over-recognised, producing unbillable revenue.</p>
           <ul style={{ marginTop: 6, paddingLeft: 22, color: T.text3 }}>
             <li>Green: 0–25% — healthy</li>
